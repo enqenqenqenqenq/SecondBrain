@@ -1,0 +1,74 @@
+.sync-unlock {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.sync-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text-h);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.sync-input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.sync-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.sync-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 20px 16px;
+}
+
+.sync-dialog .sync-body p {
+  margin: 0;
+  text-align: left;
+  font-size: 13px;
+}
+
+.sync-dialog h2 {
+  margin-bottom: 12px;
+}
+
+.sync-strength {
+  font-size: 12px;
+}
+
+.sync-more {
+  margin: 4px 0;
+}
+
+.sync-more summary {
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.sync-more .settings-button {
+  margin-bottom: 10px;
+}
+
+.settings-button.danger-outline {
+  color: var(--danger);
+  background: none;
+  border: 1.5px solid var(--danger);
+}

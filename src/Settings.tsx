@@ -4,6 +4,8 @@ import { BUILD } from './buildInfo'
 import { formatBytes, readDeviceStorage, requestPersistence } from './deviceStorage'
 import type { DeviceStorage } from './deviceStorage'
 import { countNotes } from './storage'
+import { useSync } from './sync'
+import SyncSection from './SyncSection'
 import './Settings.css'
 
 const SOURCE_URL = 'https://github.com/enqenqenqenqenq/SecondBrain'
@@ -12,6 +14,7 @@ export default function Settings() {
   const [count, setCount] = useState<number | null>(null)
   const [device, setDevice] = useState<DeviceStorage | null>(null)
   const [denied, setDenied] = useState(false)
+  const synced = useSync().status.kind !== 'off'
 
   useEffect(() => {
     let alive = true
@@ -66,8 +69,14 @@ export default function Settings() {
         {denied && (
           <p className="hint">Браузер отказал. У установленного приложения он чаще соглашается.</p>
         )}
-        <p className="hint">Записи хранятся только на этом устройстве.</p>
+        <p className="hint">
+          {synced
+            ? 'Записи хранятся на этом устройстве и на вашем Google Диске в зашифрованном виде.'
+            : 'Записи хранятся только на этом устройстве.'}
+        </p>
       </section>
+
+      <SyncSection />
 
       <Backup />
 

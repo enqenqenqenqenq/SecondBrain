@@ -144,11 +144,13 @@ const isStrList = (v: unknown): v is string[] =>
   v.every((s) => typeof s === 'string' && s.length <= MAX_ID)
 
 // Общие поля. Удалённые объекты не восстанавливаем, поэтому deletedAt обязан быть пустым
-function common(o: Raw) {
+function common(o: Raw, allowDeleted = false) {
   const { id, createdAt, updatedAt, rev, deviceId, deletedAt } = o
   if (!isId(id) || !isNum(createdAt) || !isNum(updatedAt)) return null
   if (typeof rev !== 'number' || !Number.isInteger(rev) || rev < 1) return null
-  if (!isId(deviceId) || deletedAt !== null) return null
+  if (!isId(deviceId)) return null
+  // При загрузке из копии данных удалённые не нужны. С Диска приходят и удалённые: это и есть удаление.
+  if (allowDeleted ? deletedAt !== null && !isNum(deletedAt) : deletedAt !== null) return null
   // Версии для разбора конфликтов: нет у старых копий, а испорченные делают объект повреждённым
   if (o.clock !== undefined && !isValidClock(o.clock)) return null
   return {
@@ -157,13 +159,13 @@ function common(o: Raw) {
     updatedAt,
     rev,
     deviceId,
-    deletedAt: null,
+    deletedAt: allowDeleted ? (deletedAt as number | null) : null,
     ...(o.clock !== undefined && { clock: o.clock }),
   }
 }
 
-function toNote(o: Raw): Note | null {
-  const base = common(o)
+function toNote(o: Raw, allowDeleted = false): Note | null {
+  const base = common(o, allowDeleted)
   if (!base || !isStr(o.text) || o.text.trim() === '') return null
   if (!isValidEvent(o.event as never) || typeof o.timeIsAuto !== 'boolean') return null
   if (o.reviewedAt !== null && !isNum(o.reviewedAt)) return null
@@ -192,8 +194,8 @@ function toFacts(v: unknown): Fact[] | null {
   return facts
 }
 
-function toCard(o: Raw): Card | null {
-  const base = common(o)
+function toCard(o: Raw, allowDeleted = false): Card | null {
+  const base = common(o, allowDeleted)
   if (!base || (o.kind !== 'person' && o.kind !== 'place')) return null
   if (!isStr(o.name) || o.name.trim() === '' || !isStrList(o.aliases)) return null
   if (!isStr(o.description) || !isStr(o.address)) return null
@@ -224,8 +226,8 @@ function toCard(o: Raw): Card | null {
   }
 }
 
-function toLink(o: Raw): Link | null {
-  const base = common(o)
+function toLink(o: Raw, allowDeleted = false): Link | null {
+  const base = common(o, allowDeleted)
   if (!base || o.ownerType !== 'note' || !isId(o.ownerId) || !isId(o.cardId)) return null
   if (o.role !== null && o.role !== 'with' && o.role !== 'mentioned') return null
   return { ...base, ownerType: 'note', ownerId: o.ownerId, cardId: o.cardId, role: o.role }
@@ -379,3 +381,12 @@ export async function importData(
     }
   })
 }
+
+// Проверка одного объекта, пришедшего с другого устройства через Диск. Возвращает чистый объект или
+// null, если он повреждён. Удалённые допустимы.
+export const readRemoteNote = (value: unknown): Note | null =>
+  isRecord(value) ? toNote(value, true) : null
+export const readRemoteCard = (value: unknown): Card | null =>
+  isRecord(value) ? toCard(value, true) : null
+export const readRemoteLink = (value: unknown): Link | null =>
+  isRecord(value) ? toLink(value, true) : null

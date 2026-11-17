@@ -46,6 +46,9 @@ export {
   exportText,
   parseExport,
   importData,
+  readRemoteNote,
+  readRemoteCard,
+  readRemoteLink,
   EXPORT_FORMAT,
   EXPORT_VERSION,
 } from './backup'

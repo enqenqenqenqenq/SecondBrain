@@ -116,7 +116,7 @@ describe('жизнь записи от создания до возвращен�
 })
 
 describe('схема базы и миграции', () => {
-  it('схема версии 3 не менялась без миграции', () => {
+  it('схема версии 4 не менялась без миграции', () => {
     const schema = Object.fromEntries(
       db.tables.map((t) => [
         t.name,
@@ -127,7 +127,7 @@ describe('схема базы и миграции', () => {
       { version: db.verno, schema },
       'Схема базы изменилась. Подними версию в db.ts, добавь миграцию и обнови этот тест',
     ).toEqual({
-      version: 3,
+      version: 4,
       schema: {
         cards: { primKey: 'id', indexes: ['kind', 'name', 'updatedAt'] },
         links: { primKey: 'id', indexes: ['[ownerType+ownerId]', 'cardId', 'updatedAt'] },
@@ -143,6 +143,7 @@ describe('схема базы и миграции', () => {
           ],
         },
         settings: { primKey: 'key', indexes: [] },
+        syncState: { primKey: 'key', indexes: [] },
       },
     })
   })
