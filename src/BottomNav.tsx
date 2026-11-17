@@ -1,18 +1,20 @@
 import type { Route } from './useHashRoute'
 import './BottomNav.css'
 
-const TABS: { route: Route; href: string; label: string }[] = [
+const TABS: { route: 'entry' | 'feed'; href: string; label: string }[] = [
   { route: 'entry', href: '#/', label: 'Запись' },
   { route: 'feed', href: '#/feed', label: 'Лента' },
 ]
 
 export default function BottomNav({ route }: { route: Route }) {
+  // Неразобранные записи открываются из ленты, поэтому подсвечиваем вкладку «Лента»
+  const tab = route === 'unreviewed' ? 'feed' : route
   return (
     <nav className="nav" aria-label="Разделы">
-      {TABS.map((tab) => (
-        <a key={tab.route} href={tab.href} aria-current={tab.route === route ? 'page' : undefined}>
+      {TABS.map((item) => (
+        <a key={item.route} href={item.href} aria-current={item.route === tab ? 'page' : undefined}>
           <span className="nav-dot" />
-          <span>{tab.label}</span>
+          <span>{item.label}</span>
         </a>
       ))}
     </nav>

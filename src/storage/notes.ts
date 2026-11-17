@@ -45,6 +45,9 @@ export function listNotes({ limit, offset }: ListOptions = {}): Promise<Note[]> 
   return query.toArray()
 }
 
+// Запись ещё не дополнена: людей, места и точное время к ней не добавляли
+export const isUnreviewed = (note: Note): boolean => note.reviewedAt === null
+
 export async function countNotes(): Promise<number> {
   return db.notes.filter((n) => n.deletedAt === null).count()
 }

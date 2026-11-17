@@ -9,6 +9,7 @@ import {
   restoreNote,
   updateNote,
   watchNotes,
+  isUnreviewed,
 } from './index'
 import type { EventTime } from './types'
 
@@ -242,5 +243,32 @@ describe('наблюдение', () => {
     await createNote('после остановки')
     await new Promise((r) => setTimeout(r, 50))
     expect(calls).toBe(before)
+  })
+})
+
+describe('неразобранные записи', () => {
+  it('новая запись неразобранная, после отметки «дополнено» уходит из этого списка', async () => {
+    const a = await createNote('быстрая')
+    const b = await createNote('другая')
+    expect((await listNotes()).filter(isUnreviewed)).toHaveLength(2)
+    await updateNote(a.id, { reviewedAt: Date.now() })
+    const notes = await listNotes()
+    expect(notes.filter(isUnreviewed).map((n) => n.id)).toEqual([b.id])
+    // в ленте разобранная запись остаётся
+    expect(notes).toHaveLength(2)
+  })
+
+  it('удалённая запись в неразобранных не показывается', async () => {
+    const a = await createNote('лишняя')
+    await deleteNote(a.id)
+    expect((await listNotes()).filter(isUnreviewed)).toHaveLength(0)
+  })
+
+  it('отметку можно снять, запись снова неразобранная', async () => {
+    const a = await createNote('вернуть')
+    await updateNote(a.id, { reviewedAt: 123 })
+    expect(isUnreviewed((await getNote(a.id))!)).toBe(false)
+    await updateNote(a.id, { reviewedAt: null })
+    expect(isUnreviewed((await getNote(a.id))!)).toBe(true)
   })
 })

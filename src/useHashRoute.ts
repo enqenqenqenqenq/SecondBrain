@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 
-export type Route = 'entry' | 'feed'
+export type Route = 'entry' | 'feed' | 'unreviewed'
 
-const read = (): Route => (window.location.hash === '#/feed' ? 'feed' : 'entry')
+const read = (): Route => {
+  if (window.location.hash === '#/feed') return 'feed'
+  if (window.location.hash === '#/unreviewed') return 'unreviewed'
+  return 'entry'
+}
 
 // Простая маршрутизация по части адреса после решётки, работает на GitHub Pages без настроек
 export function useHashRoute(): Route {
