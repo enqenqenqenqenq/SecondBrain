@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db, getDeviceId } from './db'
-import { countNotes, createNote, deleteNote, getNote, listNotes, restoreNote, updateNote } from './index'
+import {
+  countNotes,
+  createNote,
+  deleteNote,
+  getNote,
+  listNotes,
+  restoreNote,
+  updateNote,
+} from './index'
 import type { EventTime } from './types'
 
 const minute = (from: string): EventTime => ({ precision: 'minute', from, to: from })
@@ -41,7 +49,11 @@ describe('создание', () => {
   })
 
   it('время, заданное вручную, помечает запись как уточнённую', async () => {
-    const note = await createNote('летом', { precision: 'season', from: '2024-06-01T00:00', to: '2024-08-31T23:59' })
+    const note = await createNote('летом', {
+      precision: 'season',
+      from: '2024-06-01T00:00',
+      to: '2024-08-31T23:59',
+    })
     expect(note.timeIsAuto).toBe(false)
     expect(note.event.precision).toBe('season')
   })
@@ -55,13 +67,14 @@ describe('чтение', () => {
   })
 
   it('десять записей читаются от новых к старым', async () => {
-    const times = Array.from({ length: 10 }, (_, i) => `2026-11-${String(10 + i).padStart(2, '0')}T12:00`)
+    const times = Array.from(
+      { length: 10 },
+      (_, i) => `2026-11-${String(10 + i).padStart(2, '0')}T12:00`,
+    )
     for (let i = 0; i < 10; i++) await createNote(`запись ${i}`, minute(times[i]))
     const list = await listNotes()
     expect(list).toHaveLength(10)
-    expect(list.map((n) => n.text)).toEqual(
-      Array.from({ length: 10 }, (_, i) => `запись ${9 - i}`),
-    )
+    expect(list.map((n) => n.text)).toEqual(Array.from({ length: 10 }, (_, i) => `запись ${9 - i}`))
     expect(await countNotes()).toBe(10)
   })
 
