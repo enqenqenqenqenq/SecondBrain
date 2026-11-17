@@ -81,7 +81,16 @@ export function startSync() {
   if (started) return
   started = true
   // Хуки Dexie работают внутри транзакции записи: обращаться к базе оттуда нельзя, поэтому выходим из неё через таймер
-  const notify = () => void setTimeout(() => sync.notifyLocalChange(), 0)
+  // Хук срабатывает на каждый объект, а загрузка файла пишет тысячи объектов сразу: сообщаем один раз за ход
+  let scheduled = false
+  const notify = () => {
+    if (scheduled) return
+    scheduled = true
+    setTimeout(() => {
+      scheduled = false
+      sync.notifyLocalChange()
+    }, 0)
+  }
   for (const table of [db.notes, db.cards, db.links]) {
     table.hook('creating', () => {
       notify()

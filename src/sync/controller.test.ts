@@ -570,6 +570,27 @@ describe('когда запускать', () => {
     await vi.waitFor(() => expect(r.controller.getState().pending).toBe(0))
   })
 
+  it('тысячи сообщений об изменениях подряд не вызывают тысячи подсчётов неотправленного', async () => {
+    const remote = new MemoryRemote()
+    const r = rig(remote, 'a')
+    await connect(r)
+    r.local.addNote('n1', 'раз')
+    let counted = 0
+    const collect = r.local.collectDirty.bind(r.local)
+    r.local.collectDirty = async () => {
+      counted++
+      return collect()
+    }
+    for (let i = 0; i < 5000; i++) r.controller.notifyLocalChange()
+    await idle()
+    expect(counted).toBeLessThanOrEqual(2)
+    // Число при этом верное, а последнее изменение не потеряно
+    expect(r.controller.getState().pending).toBe(1)
+    r.local.addNote('n2', 'два')
+    r.controller.notifyLocalChange()
+    await vi.waitFor(() => expect(r.controller.getState().pending).toBe(2))
+  })
+
   it('без подключения изменения запуск не назначают', async () => {
     const remote = new MemoryRemote()
     const r = rig(remote, 'a')

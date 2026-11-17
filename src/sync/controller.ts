@@ -147,12 +147,31 @@ export function createController(deps: ControllerDeps): Controller {
     },
   }
 
-  async function refreshPending() {
-    try {
-      set({ pending: (await deps.local.collectDirty()).length })
-    } catch {
-      // число не обязательно
+  // Подсчёт читает все объекты. При массовой записи (загрузка файла на тысячи записей) о каждой записи
+  // сообщается отдельно, поэтому пока идёт подсчёт, новые просьбы сливаются в один повторный.
+  let counting: Promise<void> | null = null
+  let recount = false
+  function refreshPending(): Promise<void> {
+    if (counting) {
+      recount = true
+      return counting
     }
+    counting = (async () => {
+      try {
+        for (;;) {
+          recount = false
+          try {
+            set({ pending: (await deps.local.collectDirty()).length })
+          } catch {
+            // число не обязательно
+          }
+          if (!recount) break
+        }
+      } finally {
+        counting = null
+      }
+    })()
+    return counting
   }
 
   const remoteOf = () => {
