@@ -12,7 +12,9 @@
 8. 0008-license.txt. Лицензия AGPL-3.0.
 9. 0009-hosting.txt. Хостинг: GitHub Pages.
 10. 0010-checks.txt. Проверки: Vitest, типы, линтер, ручная проверка на телефонах.
+11. 0011-sync-conflicts.txt. Конфликты синхронизации: победитель и копия проигравшей, формат файлов на Диске.
 
+Проект синхронизации целиком: docs/sync-design.txt.
 Схема архитектуры лежит рядом: docs/architecture.png и docs/architecture.svg.
 Полный перечень технологий с причинами: docs/stack.txt.
 Стратегия тестирования: docs/testing-strategy.txt.
