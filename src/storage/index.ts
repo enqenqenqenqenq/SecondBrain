@@ -8,5 +8,5 @@ export {
   deleteNote,
   restoreNote,
 } from './notes'
-export { eventAt, formatMinute } from './time'
+export { eventAt, formatMinute, describeEvent } from './time'
 export type { Note, NotePatch, EventTime, Precision, ListOptions } from './types'

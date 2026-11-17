@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { createNote, deleteNote } from './storage'
+import { createNote, deleteNote, describeEvent, listNotes } from './storage'
+import type { Note } from './storage'
 import './QuickEntry.css'
+
+const loadRecent = () => listNotes({ limit: 20 })
 
 type Notice = { kind: 'saved'; id: string; text: string } | { kind: 'error' } | null
 
@@ -21,8 +24,18 @@ export default function QuickEntry() {
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<Notice>(null)
+  const [recent, setRecent] = useState<Note[] | null>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const now = useNow()
+
+  // Записи из хранилища при открытии экрана
+  useEffect(() => {
+    let alive = true
+    void loadRecent().then((notes) => alive && setRecent(notes))
+    return () => {
+      alive = false
+    }
+  }, [])
 
   // Сообщение «Записано» гаснет само
   useEffect(() => {
@@ -35,11 +48,14 @@ export default function QuickEntry() {
     const value = text.trim()
     if (!value || saving) return
     setSaving(true)
+    // Поле очищается сразу: то, что человек успеет набрать дальше, не потеряется
+    setText('')
     try {
       const note = await createNote(value)
-      setText('')
       setNotice({ kind: 'saved', id: note.id, text: note.text })
+      setRecent(await loadRecent())
     } catch {
+      setText((current) => (current.trim() ? `${value}\n${current}` : value))
       setNotice({ kind: 'error' })
     } finally {
       setSaving(false)
@@ -52,6 +68,7 @@ export default function QuickEntry() {
     if (notice?.kind !== 'saved') return
     const { id, text: saved } = notice
     await deleteNote(id)
+    setRecent(await loadRecent())
     setText((current) => (current.trim() ? `${saved}\n${current}` : saved))
     setNotice(null)
     inputRef.current?.focus()
@@ -104,6 +121,18 @@ export default function QuickEntry() {
         )}
         {notice?.kind === 'error' && <span>Не удалось сохранить. Текст остался в поле.</span>}
       </div>
+
+      <section className="recent" aria-label="Записи">
+        {recent?.length === 0 && <p className="empty">Пока пусто</p>}
+        <ul>
+          {recent?.map((n) => (
+            <li key={n.id}>
+              <div className="note-text">{n.text}</div>
+              <div className="note-when">{describeEvent(n.event, now)}</div>
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   )
 }
