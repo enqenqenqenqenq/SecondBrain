@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 import { isApproximate } from './noteFormat'
-import { describeEvent, eventAt, updateNote, watchNote } from './storage'
-import type { EventTime, Note } from './storage'
+import { describeEvent, eventAt, updateNote, watchCardsOfNote, watchNote } from './storage'
+import type { CardOfNote, EventTime, Note } from './storage'
 import TimeSheet from './TimeSheet'
 import { useNow } from './useNow'
 import './NoteCard.css'
@@ -22,10 +22,12 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
   const [draft, setDraft] = useState('')
   const [error, setError] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
+  const [linked, setLinked] = useState<CardOfNote[]>([])
   const dialogRef = useRef<HTMLDialogElement>(null)
   const now = useNow()
 
   useEffect(() => watchNote(id, setNote, () => setNote(undefined)), [id])
+  useEffect(() => watchCardsOfNote(id, setLinked), [id])
 
   if (note === null) return null
 
@@ -131,10 +133,28 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
       </p>
       {error && <p className="empty">Не удалось сохранить время</p>}
 
+      {linked.length > 0 && (
+        <ul className="link-chips card-links" aria-label="Люди и места">
+          {linked.map(({ card, role }) => (
+            <li key={card.id} className="link-chip">
+              <span className="link-chip-name">{card.name}</span>
+              {card.kind === 'person' && role && (
+                <span className="link-chip-role-text">
+                  {role === 'with' ? 'был со мной' : 'упомянут'}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
       <p className="hint">Записано: {describeEvent(eventAt(new Date(note.createdAt)), now)}</p>
 
       <div className="actions">
-        <button type="button" className="primary" onClick={() => startEdit(note)}>
+        <a className="button primary" href={`#/complete/${encodeURIComponent(id)}`}>
+          Дополнить
+        </a>
+        <button type="button" className="secondary" onClick={() => startEdit(note)}>
           Изменить
         </button>
         <button type="button" className="danger" onClick={() => dialogRef.current?.showModal()}>

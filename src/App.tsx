@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import BottomNav from './BottomNav'
+import Complete from './Complete'
 import Dev from './Dev'
 import Feed from './Feed'
 import NoteCard from './NoteCard'
@@ -39,6 +40,7 @@ export default function App() {
     <>
       {route.name === 'feed' && <Feed />}
       {route.name === 'note' && <NoteCard id={route.id} onDelete={(id) => void remove(id)} />}
+      {route.name === 'complete' && <Complete id={route.id} />}
       {route.name === 'entry' && <QuickEntry />}
       {route.name === 'settings' && <Settings />}
       {import.meta.env.DEV && route.name === 'dev' && <Dev />}

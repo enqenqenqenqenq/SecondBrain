@@ -32,6 +32,8 @@ export {
   watchNotesOfCard,
 } from './links'
 export type { CardOfNote } from './links'
+export { completeNote } from './complete'
+export type { CompleteInput, CompleteLink, CompleteResult } from './complete'
 export {
   exportData,
   serializeExport,

@@ -13,6 +13,8 @@
   --toast-link: #9db8f5;
   --danger: #c0392b;
   --mark: rgb(59 111 212 / 25%);
+  --chip-bg: #e8ddf7;
+  --chip-border: #7b4fbf;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -42,6 +44,8 @@
     --toast-bg: #2e3140;
     --danger: #ef6b5b;
     --mark: rgb(110 155 255 / 35%);
+    --chip-bg: #2e2540;
+    --chip-border: #8a65c9;
   }
 }
 

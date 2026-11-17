@@ -4,6 +4,7 @@ export type Route =
   | { name: 'entry' }
   | { name: 'feed' }
   | { name: 'note'; id: string }
+  | { name: 'complete'; id: string }
   | { name: 'settings' }
   | { name: 'dev' }
 
@@ -13,6 +14,8 @@ const read = (): Route => {
   if (hash === '#/settings') return { name: 'settings' }
   // Служебная страница есть только при разработке
   if (hash === '#/dev' && import.meta.env.DEV) return { name: 'dev' }
+  const complete = /^#\/complete\/(.+)$/.exec(hash)
+  if (complete) return { name: 'complete', id: decodeURIComponent(complete[1]) }
   const note = /^#\/note\/(.+)$/.exec(hash)
   if (note) return { name: 'note', id: decodeURIComponent(note[1]) }
   return { name: 'entry' }

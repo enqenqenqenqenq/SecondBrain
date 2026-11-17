@@ -1,0 +1,83 @@
+.complete .field-title {
+  margin: 24px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.complete textarea {
+  min-height: 140px;
+  height: 22dvh;
+}
+
+.link-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 0 6px 0 12px;
+  font-size: 14px;
+  color: var(--text-h);
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-border);
+  border-radius: 18px;
+}
+
+.link-chip-name {
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.link-chip-role,
+.link-chip-remove {
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  background: none;
+  border: none;
+}
+
+.link-chip-role {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.link-chip-remove {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.link-chip.add {
+  height: 36px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--accent);
+  cursor: pointer;
+  background: none;
+  border: 1px dashed var(--accent);
+}
+
+.card-links {
+  margin-top: 16px;
+}
+
+.link-chip-role-text {
+  padding-right: 6px;
+  font-size: 12px;
+  color: var(--text);
+}

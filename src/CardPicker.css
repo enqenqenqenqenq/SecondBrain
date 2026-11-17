@@ -1,0 +1,57 @@
+.picker-search {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text-h);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+}
+
+.picker-search:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.picker-list {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.picker-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.picker-name {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.picker-sub {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.picker-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.picker-actions .choice {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}

@@ -66,14 +66,14 @@ function checkKindFields(kind: CardKind, birthday: unknown, facts: unknown[], ad
   }
 }
 
-export async function createCard(input: NewCard): Promise<Card> {
+// Собирает проверенную карточку, ничего не записывая. Используется и при создании, и при дополнении записи.
+export function buildCard(input: NewCard, deviceId: string, now: number): Card {
   if (input.kind !== 'person' && input.kind !== 'place') throw new Error('Неизвестный вид карточки')
   const birthday = cleanBirthday(input.birthday ?? null)
   const facts = cleanFacts(input.facts ?? [])
   const address = (input.address ?? '').trim()
   checkKindFields(input.kind, birthday, facts, address)
-  const now = Date.now()
-  const card: Card = {
+  return {
     id: crypto.randomUUID(),
     kind: input.kind,
     name: cleanName(input.name),
@@ -86,9 +86,13 @@ export async function createCard(input: NewCard): Promise<Card> {
     createdAt: now,
     updatedAt: now,
     rev: 1,
-    deviceId: await getDeviceId(),
+    deviceId,
     deletedAt: null,
   }
+}
+
+export async function createCard(input: NewCard): Promise<Card> {
+  const card = buildCard(input, await getDeviceId(), Date.now())
   await db.cards.add(card)
   return card
 }
