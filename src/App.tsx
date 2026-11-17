@@ -4,6 +4,7 @@ import Dev from './Dev'
 import Feed from './Feed'
 import NoteCard from './NoteCard'
 import QuickEntry from './QuickEntry'
+import Settings from './Settings'
 import Toast from './Toast'
 import type { ToastState } from './Toast'
 import { deleteNote, restoreNote } from './storage'
@@ -39,6 +40,7 @@ export default function App() {
       {route.name === 'feed' && <Feed />}
       {route.name === 'note' && <NoteCard id={route.id} onDelete={(id) => void remove(id)} />}
       {route.name === 'entry' && <QuickEntry />}
+      {route.name === 'settings' && <Settings />}
       {import.meta.env.DEV && route.name === 'dev' && <Dev />}
       <Toast toast={toast} onUndo={(id) => void undoRemove(id)} onClose={closeToast} />
       <BottomNav route={route} />
