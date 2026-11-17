@@ -1,5 +1,6 @@
 import { liveQuery } from 'dexie'
 import { db, getDeviceId } from './db'
+import { isValidEvent } from './fuzzyTime'
 import { eventAt } from './time'
 import type { ListOptions, Note, NotePatch } from './types'
 
@@ -11,6 +12,7 @@ function cleanText(text: string): string {
 
 export async function createNote(text: string, event?: Note['event']): Promise<Note> {
   const value = cleanText(text)
+  if (event && !isValidEvent(event)) throw new Error('Некорректное время события')
   const now = Date.now()
   const note: Note = {
     id: crypto.randomUUID(),
@@ -71,6 +73,7 @@ async function touch(id: string, change: (n: Note) => Partial<Note>): Promise<No
 
 export async function updateNote(id: string, patch: NotePatch): Promise<Note | undefined> {
   const text = patch.text === undefined ? undefined : cleanText(patch.text)
+  if (patch.event && !isValidEvent(patch.event)) throw new Error('Некорректное время события')
   const existing = await getNote(id)
   if (!existing) return undefined
   // Пустое изменение не считается правкой: лишний номер правки только засорил бы синхронизацию
