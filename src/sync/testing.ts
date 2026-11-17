@@ -21,10 +21,22 @@ export class MemoryRemote implements RemoteStore {
   private next = 1
   calls: Record<Op, number> = { list: 0, read: 0, create: 0, delete: 0 }
   private failures: { op: Op; match?: (name: string) => boolean; times: number }[] = []
+  // Случайные сбои сети. lost: запрос дошёл и выполнен, а ответ потерялся (клиент считает, что не вышло).
+  chaos: { rnd: () => number; fail: number; lost: number } | null = null
 
   // Следующие times вызовов действия op (для файлов, подходящих под match) завершатся ошибкой
   fail(op: Op, times = 1, match?: (name: string) => boolean) {
     this.failures.push({ op, times, match })
+  }
+
+  // Случайный сбой до выполнения запроса
+  private chaosBefore(op: Op) {
+    if (this.chaos && this.chaos.rnd() < this.chaos.fail) throw new Error(`Обрыв сети: ${op}`)
+  }
+
+  // Ответ потерялся уже после выполнения (только для действий, меняющих Диск)
+  private chaosAfter(op: Op) {
+    if (this.chaos && this.chaos.rnd() < this.chaos.lost) throw new Error(`Потерян ответ: ${op}`)
   }
 
   private maybeFail(op: Op, name = '') {
@@ -38,26 +50,32 @@ export class MemoryRemote implements RemoteStore {
 
   async list(): Promise<RemoteFile[]> {
     this.maybeFail('list')
+    this.chaosBefore('list')
     return [...this.files].map(([id, f]) => ({ id, name: f.name }))
   }
 
   async read(id: string): Promise<string> {
     const f = this.files.get(id)
     this.maybeFail('read', f?.name)
+    this.chaosBefore('read')
     if (!f) throw new Error('Файла нет')
     return f.content
   }
 
   async create(name: string, content: string): Promise<RemoteFile> {
     this.maybeFail('create', name)
+    this.chaosBefore('create')
     const id = `f${this.next++}`
     this.files.set(id, { name, content })
+    this.chaosAfter('create')
     return { id, name }
   }
 
   async delete(id: string): Promise<void> {
     this.maybeFail('delete', this.files.get(id)?.name)
+    this.chaosBefore('delete')
     this.files.delete(id)
+    this.chaosAfter('delete')
   }
 
   names(): string[] {
@@ -79,6 +97,8 @@ export class MemoryLocal implements LocalStore {
   synced = new Map<string, number>()
   meta: SyncMeta = emptyMeta()
   failSaveMeta = 0
+  // Случайные сбои устройства: приложение закрыли или упало посреди круга. after: действие успело выполниться.
+  chaos: { rnd: () => number; p: number } | null = null
   id: string
   private tick: () => number
 
@@ -199,11 +219,17 @@ export class MemoryLocal implements LocalStore {
     )
   }
 
+  private crash(point: string) {
+    if (this.chaos && this.chaos.rnd() < this.chaos.p) throw new Error(`Сбой устройства: ${point}`)
+  }
+
   async markSynced(objects: SyncObject[]) {
+    this.crash('до отметки отправленного')
     for (const o of objects) {
       const key = `${o.entity}:${o.data.id}`
       this.synced.set(key, Math.max(this.synced.get(key) ?? 0, o.data.rev))
     }
+    this.crash('после отметки отправленного')
   }
 
   async allObjects() {
@@ -213,6 +239,7 @@ export class MemoryLocal implements LocalStore {
   async applyRemote(objects: SyncObject[]): Promise<ApplyReport> {
     const report: ApplyReport = { applied: 0, skipped: 0, conflicts: 0, invalid: 0 }
     for (const o of objects) {
+      this.crash('посреди применения файла')
       const table = this.table(o.entity)
       const outcome = await decide(o.entity, table.get(o.data.id), o.data, this.id)
       if (outcome.action === 'skip') {
@@ -233,11 +260,13 @@ export class MemoryLocal implements LocalStore {
   }
 
   async saveMeta(meta: SyncMeta) {
+    this.crash('до сохранения состояния')
     if (this.failSaveMeta > 0) {
       this.failSaveMeta--
       throw new Error('Сбой при сохранении состояния')
     }
     this.meta = structuredClone(meta)
+    this.crash('после сохранения состояния')
   }
 }
 

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { VaultError, createVault, openVault } from '../crypto/vault'
 import { defaultConfig, createController } from './controller'
 import type { Config, ConfigStore, Controller } from './controller'
@@ -102,6 +102,11 @@ function rig(
     },
   })
   return { controller, config, auth, local, timers, online, forgot }
+}
+
+// Даём всем уже запущенным асинхронным действиям закончиться: несколько ходов цикла событий вместо ожидания по часам
+const idle = async () => {
+  for (let i = 0; i < 8; i++) await new Promise((res) => setTimeout(res, 0))
 }
 
 const status = (r: Rig) => {
@@ -557,13 +562,12 @@ describe('когда запускать', () => {
     r.controller.notifyLocalChange()
     r.controller.notifyLocalChange()
     r.controller.notifyLocalChange()
-    await new Promise((res) => setTimeout(res, 20))
+    await idle()
     const live = r.timers.filter((t) => !t.cleared)
     expect(live).toHaveLength(1)
     expect(live[0].ms).toBe(60_000)
     live[0].fn()
-    await new Promise((res) => setTimeout(res, 50))
-    expect(r.controller.getState().pending).toBe(0)
+    await vi.waitFor(() => expect(r.controller.getState().pending).toBe(0))
   })
 
   it('без подключения изменения запуск не назначают', async () => {
@@ -571,7 +575,7 @@ describe('когда запускать', () => {
     const r = rig(remote, 'a')
     r.local.addNote('n1', 'раз')
     r.controller.notifyLocalChange()
-    await new Promise((res) => setTimeout(res, 20))
+    await idle()
     expect(r.timers).toEqual([])
   })
 
@@ -591,7 +595,7 @@ describe('когда запускать', () => {
     }
     notify = () => b.controller.notifyLocalChange()
     await connect(b)
-    await new Promise((res) => setTimeout(res, 20))
+    await idle()
     expect(b.timers.filter((t) => !t.cleared)).toEqual([])
   })
 
@@ -610,7 +614,7 @@ describe('когда запускать', () => {
     await connect(r)
     r.controller.stop()
     r.controller.notifyLocalChange()
-    await new Promise((res) => setTimeout(res, 20))
+    await idle()
     expect(r.timers).toEqual([])
   })
 

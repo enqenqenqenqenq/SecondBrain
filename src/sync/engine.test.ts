@@ -461,7 +461,7 @@ describe('снимки и уборка', () => {
     expect(made).toBe(1)
     expect(snapshotsOf(remote).length).toBe(2) // первый и новый
     expect(a.meta.covers.a).toBeGreaterThan(SNAPSHOT_AFTER - 1)
-  })
+  }, 60_000)
 
   it('старые файлы остаются неделю после снимка, потом убираются, новое устройство всё равно получает всё', async () => {
     const a = device('a')

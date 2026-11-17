@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from './db'
 import {
   createNote,
@@ -55,12 +55,12 @@ describe('копии при конфликте', () => {
     const original = await createNote('основная')
     const seen: number[] = []
     const stop = watchConflictCopies(original.id, (list) => seen.push(list.length))
-    await new Promise((r) => setTimeout(r, 50))
+    await vi.waitFor(() => expect(seen).toEqual([0]))
     const copy = await conflictCopy({ ...original, text: 'копия' })
     await db.notes.add(copy)
-    await new Promise((r) => setTimeout(r, 50))
+    await vi.waitFor(() => expect(seen.at(-1)).toBe(1))
     await deleteNote(copy.id)
-    await new Promise((r) => setTimeout(r, 50))
+    await vi.waitFor(() => expect(seen.at(-1)).toBe(0))
     stop()
     expect(seen).toEqual([0, 1, 0])
   })

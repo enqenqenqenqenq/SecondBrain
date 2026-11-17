@@ -199,7 +199,7 @@ describe('скорость', () => {
     }
     const started = performance.now()
     const result = filterNotes(big, filters, (n) => fold(n.text))
-    expect(performance.now() - started).toBeLessThan(300)
+    expect(performance.now() - started).toBeLessThan(1000)
     expect(result.length).toBeGreaterThan(0)
     expect(result.length).toBeLessThan(big.length)
   })

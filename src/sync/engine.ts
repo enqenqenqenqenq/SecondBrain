@@ -34,7 +34,7 @@ export interface SyncResult {
 
 export interface SyncProblem {
   file: string
-  code: 'bad-file' | 'newer-version' | 'other'
+  code: 'bad-file' | 'newer-version' | 'gap' | 'other'
   message: string
 }
 
@@ -115,7 +115,18 @@ export async function runSync(deps: SyncDeps): Promise<SyncResult> {
   }
   for (const [device, list] of byDevice) {
     for (const seg of list.sort((a, b) => a.seq - b.seq)) {
-      if (seg.seq <= (meta.cursor[device] ?? 0)) continue
+      const cursor = meta.cursor[device] ?? 0
+      if (seg.seq <= cursor) continue
+      // Пропущенные номера допустимы, только если их охватил снимок (старые файлы убираются после снимка).
+      // Иначе файл с меньшим номером ещё не виден или пропал: дальше не идём, чтобы его потом не пропустить.
+      if (seg.seq > cursor + 1 && seg.seq - 1 > (meta.covers[device] ?? 0)) {
+        result.errors.push({
+          file: seg.file.name,
+          code: 'gap',
+          message: 'Перед этим файлом нет предыдущего, его ещё не видно или он пропал',
+        })
+        break
+      }
       try {
         const payload = await codec.decode(seg.file.name, await remote.read(seg.file.id))
         const report = await local.applyRemote(payload.objects)
