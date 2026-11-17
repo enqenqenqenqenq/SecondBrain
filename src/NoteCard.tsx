@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
 import { isApproximate } from './noteFormat'
 import { describeEvent, eventAt, updateNote, watchNote } from './storage'
-import type { Note } from './storage'
+import type { EventTime, Note } from './storage'
+import TimeSheet from './TimeSheet'
 import { useNow } from './useNow'
 import './NoteCard.css'
 
@@ -20,6 +21,7 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState('')
   const [error, setError] = useState(false)
+  const [timeOpen, setTimeOpen] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const now = useNow()
 
@@ -58,6 +60,17 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
     try {
       await updateNote(id, { text: value })
       setEditing(false)
+    } catch {
+      setError(true)
+    }
+  }
+
+  // Время меняется отдельным окном и сохраняется сразу, текст правится отдельно
+  async function saveTime(event: EventTime) {
+    setTimeOpen(false)
+    try {
+      await updateNote(id, { event })
+      setError(false)
     } catch {
       setError(true)
     }
@@ -110,7 +123,13 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
       <span className={isApproximate(note) ? 'when approx' : 'when'}>
         {describeEvent(note.event, now)}
       </span>
-      {note.timeIsAuto && <p className="hint">Время поставлено само.</p>}
+      <p className="hint">
+        {note.timeIsAuto && 'Время поставлено само. '}
+        <button type="button" className="inline-link" onClick={() => setTimeOpen(true)}>
+          Уточнить
+        </button>
+      </p>
+      {error && <p className="empty">Не удалось сохранить время</p>}
 
       <p className="hint">Записано: {describeEvent(eventAt(new Date(note.createdAt)), now)}</p>
 
@@ -122,6 +141,15 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
           Удалить
         </button>
       </div>
+
+      {timeOpen && (
+        <TimeSheet
+          event={note.event}
+          now={now}
+          onSave={(event) => void saveTime(event)}
+          onClose={() => setTimeOpen(false)}
+        />
+      )}
 
       <dialog ref={dialogRef} className="confirm" aria-labelledby="confirm-title">
         <h2 id="confirm-title">Удалить запись?</h2>
