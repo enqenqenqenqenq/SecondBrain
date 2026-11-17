@@ -16,7 +16,7 @@
   margin-top: 24px;
 }
 
-.settings h2 {
+.settings section > h2 {
   margin: 0 0 8px;
   font-size: 13px;
   font-weight: 700;
@@ -75,4 +75,51 @@
   background: var(--accent);
   border: none;
   border-radius: 12px;
+}
+
+.settings-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-buttons .settings-button {
+  margin-top: 0;
+}
+
+.settings-button:disabled {
+  color: var(--disabled-text);
+  cursor: default;
+  background: var(--disabled-bg);
+  border-color: transparent;
+}
+
+.settings-button.secondary {
+  color: var(--accent);
+  background: none;
+  border: 1.5px solid var(--accent);
+}
+
+.settings-button.secondary:disabled {
+  color: var(--disabled-text);
+  border-color: var(--disabled-bg);
+}
+
+.settings-error {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: var(--danger);
+}
+
+.backup-lines {
+  padding-bottom: 12px;
+}
+
+.backup-lines p {
+  margin: 0 20px 8px;
+}
+
+.confirm-actions .accent-text {
+  font-weight: 700;
+  color: var(--accent);
 }

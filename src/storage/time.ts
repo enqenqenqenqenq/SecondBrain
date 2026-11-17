@@ -15,7 +15,7 @@ export function eventAt(date: Date = new Date()): EventTime {
   return { precision: 'minute', from: s, to: s }
 }
 
-const MONTHS_OF = [
+export const MONTHS_OF = [
   'января',
   'февраля',
   'марта',

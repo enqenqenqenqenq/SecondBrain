@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import Backup from './Backup'
 import { BUILD } from './buildInfo'
 import { formatBytes, readDeviceStorage, requestPersistence } from './deviceStorage'
 import type { DeviceStorage } from './deviceStorage'
@@ -54,7 +55,11 @@ export default function Settings() {
           )}
         </dl>
         {device?.persisted === false && (
-          <button type="button" className="settings-button" onClick={() => void protect()}>
+          <button
+            type="button"
+            className="settings-button secondary"
+            onClick={() => void protect()}
+          >
             Защитить данные от очистки
           </button>
         )}
@@ -63,6 +68,8 @@ export default function Settings() {
         )}
         <p className="hint">Записи хранятся только на этом устройстве.</p>
       </section>
+
+      <Backup />
 
       <section aria-labelledby="settings-about">
         <h2 id="settings-about">О приложении</h2>

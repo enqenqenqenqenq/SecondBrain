@@ -32,6 +32,16 @@ export {
   watchNotesOfCard,
 } from './links'
 export type { CardOfNote } from './links'
+export {
+  exportData,
+  serializeExport,
+  exportText,
+  parseExport,
+  importData,
+  EXPORT_FORMAT,
+  EXPORT_VERSION,
+} from './backup'
+export type { ExportFile, ParsedExport, ParseResult, ImportReport } from './backup'
 export { eventAt, formatMinute, describeEvent } from './time'
 export {
   minuteEvent,
