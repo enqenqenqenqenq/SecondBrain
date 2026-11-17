@@ -38,6 +38,23 @@ describe('создание', () => {
     expect(note.createdAt).toBe(note.updatedAt)
   })
 
+  it('время события совпадает с моментом сохранения с точностью до минуты', async () => {
+    const moment = new Date(2026, 5, 1, 7, 3, 59).getTime()
+    vi.spyOn(Date, 'now').mockReturnValue(moment)
+    const note = await createNote('утром')
+    expect(note.createdAt).toBe(moment)
+    expect(note.event).toEqual({
+      precision: 'minute',
+      from: '2026-06-01T07:03',
+      to: '2026-06-01T07:03',
+    })
+  })
+
+  it('запись на границе минуты получает следующую минуту', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(new Date(2026, 5, 1, 7, 4, 0).getTime())
+    expect((await createNote('на границе')).event.from).toBe('2026-06-01T07:04')
+  })
+
   it('обрезает пробелы по краям', async () => {
     expect((await createNote('  текст \n')).text).toBe('текст')
   })

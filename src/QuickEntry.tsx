@@ -10,12 +10,26 @@ type Notice = { kind: 'saved'; id: string; text: string } | { kind: 'error' } | 
 
 const clock = (d: Date) => d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 
-// Текущее время для плашки. Обновляется, пока экран открыт.
+// Текущее время для плашки. Обновляется в начале каждой минуты и при возврате на вкладку,
+// чтобы плашка совпадала со временем, которое получит запись.
 function useNow() {
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 10_000)
-    return () => clearInterval(timer)
+    let timer: ReturnType<typeof setTimeout>
+    const untilNextMinute = () => 60_000 - (Date.now() % 60_000) + 50
+    const tick = () => {
+      setNow(new Date())
+      timer = setTimeout(tick, untilNextMinute())
+    }
+    timer = setTimeout(tick, untilNextMinute())
+    const onVisible = () => {
+      if (!document.hidden) setNow(new Date())
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisible)
+    }
   }, [])
   return now
 }
