@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import type { Card } from './types'
 import { db } from './db'
 import {
   completeNote,
@@ -216,7 +217,7 @@ describe('дополнение: люди и места', () => {
     const note = await createNote('раз')
     // Восемь карточек: случайно совпасть с порядком базы почти невозможно
     const names = ['Яна', 'Борис', 'Аптека', 'Парк', 'Ольга', 'Дом', 'Кафе', 'Игорь']
-    const cards = []
+    const cards: Card[] = []
     for (const [i, name] of names.entries()) {
       cards.push(await createCard({ kind: i % 2 === 0 ? 'person' : 'place', name: `${name}` }))
     }
