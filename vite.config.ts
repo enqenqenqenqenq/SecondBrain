@@ -19,6 +19,16 @@ export default defineConfig({
         display: 'standalone',
         theme_color: '#3B6FD4',
         background_color: '#16171d',
+        // Быстрый запуск: при долгом нажатии на значок приложения предлагается «Новая запись»
+        shortcuts: [
+          {
+            name: 'Новая запись',
+            short_name: 'Запись',
+            description: 'Сразу открыть поле для быстрой записи',
+            url: './#/',
+            icons: [{ src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' }],
+          },
+        ],
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },
