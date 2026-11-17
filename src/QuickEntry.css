@@ -1,0 +1,99 @@
+.quick {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 100dvh;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.quick h1 {
+  margin: 8px 0 4px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.quick textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 160px;
+  height: 30dvh;
+  padding: 12px;
+  font: inherit;
+  font-size: 18px;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  resize: none;
+}
+
+.quick textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chip {
+  align-self: flex-start;
+  padding: 4px 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.save {
+  height: 52px;
+  font: inherit;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.save:disabled {
+  color: var(--disabled-text);
+  background: var(--disabled-bg);
+  cursor: default;
+}
+
+.notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 16px;
+  color: var(--toast-text);
+  border-radius: 12px;
+}
+
+.notice:not(:empty) {
+  background: var(--toast-bg);
+}
+
+.notice button {
+  padding: 8px 0 8px 16px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--toast-link);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
