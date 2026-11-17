@@ -103,6 +103,8 @@ const SEASON_BY_START_MONTH: Record<number, Season> = {
 // Время события целое и согласованное: строки нужного вида, точность совпадает с границами периода.
 // Проверяется собранием ожидаемого значения тем же способом, которым оно создаётся.
 export function isValidEvent(event: EventTime): boolean {
+  // Данные могут прийти из другого устройства или из файла, поэтому проверяем и вид значения
+  if (!event || typeof event.from !== 'string' || typeof event.to !== 'string') return false
   const from = parse(event.from)
   const to = parse(event.to)
   if (!from || !to || event.from > event.to) return false

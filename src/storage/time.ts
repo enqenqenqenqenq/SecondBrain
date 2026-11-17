@@ -1,3 +1,4 @@
+import { isValidEvent } from './fuzzyTime'
 import type { EventTime } from './types'
 
 const pad = (n: number) => String(n).padStart(2, '0')
@@ -62,6 +63,8 @@ function spokenDay(p: ReturnType<typeof parts>, now: Date): string {
 
 // Время события словами, с учётом точности
 export function describeEvent(event: EventTime, now: Date = new Date()): string {
+  // Испорченное время не должно ломать ленту и показывать «undefined»
+  if (!isValidEvent(event)) return 'Время не указано'
   const from = parts(event.from)
   const to = parts(event.to)
   switch (event.precision) {
