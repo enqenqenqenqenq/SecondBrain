@@ -42,3 +42,15 @@
   background: none;
   border-style: dashed;
 }
+
+/* При поиске показываем больше строк, чтобы найденное было видно */
+.row-text.searching {
+  -webkit-line-clamp: 6;
+}
+
+.row-text mark {
+  padding: 0 1px;
+  color: inherit;
+  background: var(--mark);
+  border-radius: 3px;
+}

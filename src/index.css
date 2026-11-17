@@ -12,6 +12,7 @@
   --toast-text: #ffffff;
   --toast-link: #9db8f5;
   --danger: #c0392b;
+  --mark: rgb(59 111 212 / 25%);
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -40,6 +41,7 @@
     --disabled-text: #6b7280;
     --toast-bg: #2e3140;
     --danger: #ef6b5b;
+    --mark: rgb(110 155 255 / 35%);
   }
 }
 
