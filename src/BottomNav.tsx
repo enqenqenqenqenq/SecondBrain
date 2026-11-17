@@ -7,8 +7,8 @@ const TABS: { route: 'entry' | 'feed'; href: string; label: string }[] = [
 ]
 
 export default function BottomNav({ route }: { route: Route }) {
-  // Неразобранные записи открываются из ленты, поэтому подсвечиваем вкладку «Лента»
-  const tab = route === 'unreviewed' ? 'feed' : route
+  // Неразобранные и карточка записи открываются из ленты, поэтому подсвечиваем вкладку «Лента»
+  const tab = route.name === 'entry' ? 'entry' : 'feed'
   return (
     <nav className="nav" aria-label="Разделы">
       {TABS.map((item) => (

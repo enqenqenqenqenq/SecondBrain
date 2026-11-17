@@ -9,6 +9,7 @@ import {
   restoreNote,
   updateNote,
   watchNotes,
+  watchNote,
   isUnreviewed,
 } from './index'
 import type { EventTime } from './types'
@@ -270,5 +271,32 @@ describe('неразобранные записи', () => {
     expect(isUnreviewed((await getNote(a.id))!)).toBe(false)
     await updateNote(a.id, { reviewedAt: null })
     expect(isUnreviewed((await getNote(a.id))!)).toBe(true)
+  })
+})
+
+describe('наблюдение за одной записью', () => {
+  it('сообщает запись, её изменения и удаление', async () => {
+    const note = await createNote('до правки')
+    const seen: (string | undefined)[] = []
+    const stop = watchNote(note.id, (n) => seen.push(n?.text))
+    await vi.waitFor(() => expect(seen.at(-1)).toBe('до правки'))
+    await updateNote(note.id, { text: 'после правки' })
+    await vi.waitFor(() => expect(seen.at(-1)).toBe('после правки'))
+    await deleteNote(note.id)
+    await vi.waitFor(() => expect(seen.at(-1)).toBeUndefined())
+    await restoreNote(note.id)
+    await vi.waitFor(() => expect(seen.at(-1)).toBe('после правки'))
+    stop()
+  })
+
+  it('для неизвестной записи сообщает пусто, чужие правки не мешают', async () => {
+    const other = await createNote('чужая')
+    const seen: (string | undefined)[] = []
+    const stop = watchNote('нет-такой', (n) => seen.push(n?.text))
+    await vi.waitFor(() => expect(seen).toEqual([undefined]))
+    await updateNote(other.id, { text: 'чужая изменена' })
+    await new Promise((r) => setTimeout(r, 50))
+    expect(seen.every((x) => x === undefined)).toBe(true)
+    stop()
   })
 })

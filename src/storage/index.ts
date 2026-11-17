@@ -8,6 +8,7 @@ export {
   deleteNote,
   restoreNote,
   watchNotes,
+  watchNote,
   isUnreviewed,
 } from './notes'
 export { eventAt, formatMinute, describeEvent } from './time'

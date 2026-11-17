@@ -11,6 +11,7 @@
   --toast-bg: #1f2430;
   --toast-text: #ffffff;
   --toast-link: #9db8f5;
+  --danger: #c0392b;
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
@@ -38,6 +39,7 @@
     --disabled-bg: #262833;
     --disabled-text: #6b7280;
     --toast-bg: #2e3140;
+    --danger: #ef6b5b;
   }
 }
 

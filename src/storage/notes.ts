@@ -107,3 +107,13 @@ export function watchNotes(
   const subscription = liveQuery(() => listNotes()).subscribe({ next: onChange, error: onError })
   return () => subscription.unsubscribe()
 }
+
+// Следит за одной записью: сообщает её сразу и после каждого изменения, пусто если записи нет или она удалена
+export function watchNote(
+  id: string,
+  onChange: (note: Note | undefined) => void,
+  onError?: (error: unknown) => void,
+): () => void {
+  const subscription = liveQuery(() => getNote(id)).subscribe({ next: onChange, error: onError })
+  return () => subscription.unsubscribe()
+}

@@ -1,0 +1,167 @@
+.card {
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 96px;
+}
+
+.card h1 {
+  margin: 8px 0 12px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.card .back {
+  display: inline-block;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.card-text {
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text-h);
+}
+
+.hint {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 32px;
+}
+
+.actions button {
+  height: 48px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.primary {
+  color: var(--accent-contrast);
+  background: var(--accent);
+  border: none;
+}
+
+.danger {
+  color: var(--danger);
+  background: none;
+  border: 1.5px solid var(--danger);
+}
+
+.bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.bar h1 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.link-button {
+  padding: 8px 0;
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.link-button.strong {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.link-button:disabled {
+  color: var(--disabled-text);
+  cursor: default;
+}
+
+.card textarea {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 180px;
+  height: 30dvh;
+  padding: 12px;
+  font: inherit;
+  font-size: 18px;
+  color: var(--text-h);
+  background: var(--bg);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  resize: none;
+}
+
+.card textarea:focus {
+  outline: none;
+}
+
+.confirm {
+  width: min(320px, 90vw);
+  padding: 0;
+  color: var(--text-h);
+  background: var(--bg);
+  border: none;
+  border-radius: 18px;
+}
+
+.confirm::backdrop {
+  background: rgb(0 0 0 / 50%);
+}
+
+.confirm h2 {
+  margin: 20px 20px 8px;
+  font-size: 17px;
+  text-align: center;
+}
+
+.confirm p {
+  margin: 0 20px 20px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--text);
+}
+
+.confirm-actions {
+  display: flex;
+  border-top: 1px solid var(--border);
+}
+
+.confirm-actions button {
+  flex: 1;
+  height: 48px;
+  font: inherit;
+  font-size: 16px;
+  color: var(--text);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.confirm-actions button + button {
+  border-left: 1px solid var(--border);
+}
+
+.confirm-actions .danger-text {
+  font-weight: 700;
+  color: var(--danger);
+}

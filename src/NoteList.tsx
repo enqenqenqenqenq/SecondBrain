@@ -1,12 +1,9 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useWindowVirtualizer } from '@tanstack/react-virtual'
+import { isApproximate } from './noteFormat'
 import { describeEvent } from './storage'
 import type { Note } from './storage'
 import './NoteList.css'
-
-// Сплошная плашка для точного времени, пунктирная для приблизительного
-const isApproximate = (note: Note) =>
-  note.event.precision !== 'minute' && note.event.precision !== 'day'
 
 export default function NoteList({ notes, now }: { notes: Note[]; now: Date }) {
   const listRef = useRef<HTMLDivElement>(null)
@@ -33,8 +30,9 @@ export default function NoteList({ notes, now }: { notes: Note[]; now: Date }) {
       {virtualizer.getVirtualItems().map((item) => {
         const note = notes[item.index]
         return (
-          <div
+          <a
             key={note.id}
+            href={`#/note/${encodeURIComponent(note.id)}`}
             data-index={item.index}
             ref={virtualizer.measureElement}
             className="row"
@@ -46,7 +44,7 @@ export default function NoteList({ notes, now }: { notes: Note[]; now: Date }) {
             <span className={isApproximate(note) ? 'when approx' : 'when'}>
               {describeEvent(note.event, now)}
             </span>
-          </div>
+          </a>
         )
       })}
     </div>

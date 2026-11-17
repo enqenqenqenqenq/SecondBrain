@@ -1,0 +1,32 @@
+.toast-area {
+  position: fixed;
+  right: 16px;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  left: 16px;
+  z-index: 20;
+  max-width: 608px;
+  margin: 0 auto;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--toast-text);
+  background: var(--toast-bg);
+  border-radius: 12px;
+  pointer-events: auto;
+}
+
+.toast button {
+  padding: 8px 0 8px 16px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--toast-link);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
