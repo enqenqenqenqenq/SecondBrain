@@ -1,10 +1,17 @@
 import { useEffect, useRef, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { createNote, deleteNote } from './storage'
+import { buildCompletion, pruneMentions } from './mentions'
+import type { Picked } from './mentions'
+import MentionTextarea from './MentionTextarea'
+import { completeNote, createNote, deleteNote } from './storage'
+import { useCards } from './useCards'
 import { useNow } from './useNow'
 import './QuickEntry.css'
 
-type Notice = { kind: 'saved'; id: string; text: string } | { kind: 'error' } | null
+type Notice =
+  | { kind: 'saved'; id: string; text: string; picked: Picked[]; unlinked: boolean }
+  | { kind: 'error' }
+  | null
 
 const clock = (d: Date) => d.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
 
@@ -12,6 +19,8 @@ export default function QuickEntry() {
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState<Notice>(null)
+  const [picked, setPicked] = useState<Picked[]>([])
+  const cards = useCards()
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const now = useNow()
 
@@ -27,12 +36,24 @@ export default function QuickEntry() {
     if (!value || saving) return
     setSaving(true)
     // Поле очищается сразу: то, что человек успеет набрать дальше, не потеряется
+    // Упоминания, которые из текста стёрли, не привязываем
+    const mentions = pruneMentions(text, picked, cards ?? [])
     setText('')
+    setPicked([])
     try {
       const note = await createNote(value)
-      setNotice({ kind: 'saved', id: note.id, text: note.text })
+      let unlinked = false
+      if (mentions.length > 0) {
+        try {
+          await completeNote(note.id, buildCompletion([], mentions))
+        } catch {
+          unlinked = true
+        }
+      }
+      setNotice({ kind: 'saved', id: note.id, text: note.text, picked: mentions, unlinked })
     } catch {
       setText((current) => (current.trim() ? `${value}\n${current}` : value))
+      setPicked((current) => [...mentions, ...current])
       setNotice({ kind: 'error' })
     } finally {
       setSaving(false)
@@ -43,9 +64,10 @@ export default function QuickEntry() {
   // Отмена: запись удаляется, а текст возвращается в поле, чтобы мысль не пропала
   async function undo() {
     if (notice?.kind !== 'saved') return
-    const { id, text: saved } = notice
+    const { id, text: saved, picked: savedPicked } = notice
     await deleteNote(id)
     setText((current) => (current.trim() ? `${saved}\n${current}` : saved))
+    setPicked((current) => [...savedPicked, ...current])
     setNotice(null)
     inputRef.current?.focus()
   }
@@ -64,11 +86,13 @@ export default function QuickEntry() {
       <label className="sr-only" htmlFor="quick-text">
         Текст заметки
       </label>
-      <textarea
+      <MentionTextarea
         id="quick-text"
-        ref={inputRef}
+        inputRef={inputRef}
+        cards={cards ?? []}
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={setText}
+        onPick={(p) => setPicked((list) => [...list, p])}
         onKeyDown={onKeyDown}
         placeholder="Заметка"
         autoFocus
@@ -89,7 +113,7 @@ export default function QuickEntry() {
       <div className="notice" role="status" aria-live="polite">
         {notice?.kind === 'saved' && (
           <>
-            <span>Записано</span>
+            <span>{notice.unlinked ? 'Записано, но упоминания не привязались' : 'Записано'}</span>
             <button type="button" onClick={() => void undo()}>
               Отменить
             </button>

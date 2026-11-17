@@ -162,7 +162,9 @@ describe('скорость на большом объёме', () => {
     const found = texts.filter((t) => matches(fold(t), query))
     const elapsed = performance.now() - started
     expect(found.length).toBeGreaterThan(0)
-    expect(elapsed).toBeLessThan(300)
+    // Проверка ловит резкое замедление (например, квадратичный перебор), а не точное время: при
+    // параллельном запуске всех файлов тестов первый холодный проход бывал чуть дольше 300 мс
+    expect(elapsed).toBeLessThan(1000)
   })
 })
 

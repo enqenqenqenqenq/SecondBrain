@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from './db'
 import { idFromKey } from './ids'
 import {
@@ -28,6 +28,10 @@ import { generateNotes } from './seed'
 beforeEach(async () => {
   await db.delete()
   await db.open()
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
 })
 
 // Полный путь копии: выгрузка, файл, чтение
@@ -169,6 +173,10 @@ describe('текстовая копия', () => {
   })
 
   it('записи с датой, текстом, людьми и местами, карточки с подробностями', async () => {
+    // Порядок меток записи идёт по времени связывания: чтобы он не зависел от совпадения миллисекунд,
+    // время течёт по одной миллисекунде на каждое обращение
+    let tick = Date.now()
+    vi.spyOn(Date, 'now').mockImplementation(() => ++tick)
     const note = await createNote('Выставка после зачёта\nвторая строка', dayEvent(2023, 3, 3))
     await createNote('Лето', seasonEvent(2024, 'summer'))
     const person = await createCard({

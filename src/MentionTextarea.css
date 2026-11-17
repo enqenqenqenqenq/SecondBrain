@@ -1,0 +1,48 @@
+.mention-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.mention-list {
+  max-height: 232px;
+  margin: 6px 0 0;
+  padding: 4px;
+  overflow: auto;
+  list-style: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.mention-option {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.mention-option[aria-selected='true'] {
+  background: var(--surface);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.mention-title {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.mention-sub {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.mention {
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  background: var(--chip-bg);
+  border-radius: 4px;
+}

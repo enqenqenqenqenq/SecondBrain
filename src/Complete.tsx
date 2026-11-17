@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { MouseEvent } from 'react'
 import CardPicker from './CardPicker'
 import type { Picked } from './CardPicker'
+import MentionTextarea from './MentionTextarea'
 import { isApproximate } from './noteFormat'
 import { completeNote, describeEvent, getNote, listCards, listCardsOfNote } from './storage'
 import type { Card, CardKind, EventTime, LinkRole, Note } from './storage'
@@ -98,6 +99,8 @@ export default function Complete({ id }: { id: string }) {
 
   function pick(picked: Picked) {
     setPickerOpen(false)
+    // Карточка, которая уже привязана, второй раз не добавляется
+    if ('cardId' in picked && items.some((i) => i.cardId === picked.cardId)) return
     if ('newCard' in picked) {
       const { kind, name } = picked.newCard
       // Одну и ту же новую карточку дважды не создаём
@@ -164,10 +167,12 @@ export default function Complete({ id }: { id: string }) {
       <label className="sr-only" htmlFor="complete-text">
         Текст записи
       </label>
-      <textarea
+      <MentionTextarea
         id="complete-text"
+        cards={cards}
         value={text}
-        onChange={(e) => setText(e.target.value)}
+        onChange={setText}
+        onPick={pick}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
             e.preventDefault()

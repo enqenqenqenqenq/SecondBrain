@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { hasExactCard, matchCards } from './cardSearch'
+import type { Picked } from './mentions'
 import type { Card, CardKind, LinkRole } from './storage'
 import './CardPicker.css'
 
-export type Picked =
-  | { cardId: string; role: LinkRole | null }
-  | { newCard: { kind: CardKind; name: string }; role: LinkRole | null }
+export type { Picked } from './mentions'
 
 const ROLES: { role: LinkRole; label: string }[] = [
   { role: 'with', label: 'Был со мной' },

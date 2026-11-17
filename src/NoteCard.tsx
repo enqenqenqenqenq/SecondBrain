@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import type { MouseEvent } from 'react'
+import { buildCompletion, pruneMentions, splitMentions } from './mentions'
+import type { Picked } from './mentions'
+import MentionTextarea from './MentionTextarea'
 import { isApproximate } from './noteFormat'
-import { describeEvent, eventAt, updateNote, watchCardsOfNote, watchNote } from './storage'
+import {
+  completeNote,
+  describeEvent,
+  eventAt,
+  updateNote,
+  watchCardsOfNote,
+  watchNote,
+} from './storage'
 import type { CardOfNote, EventTime, Note } from './storage'
 import TimeSheet from './TimeSheet'
+import { useCards } from './useCards'
 import { useNow } from './useNow'
 import './NoteCard.css'
 
@@ -23,6 +34,8 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
   const [error, setError] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
   const [linked, setLinked] = useState<CardOfNote[]>([])
+  const [mentions, setMentions] = useState<Picked[]>([])
+  const cards = useCards()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const now = useNow()
 
@@ -48,6 +61,7 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
 
   function startEdit(current: Note) {
     setDraft(current.text)
+    setMentions([])
     setError(false)
     setEditing(true)
   }
@@ -55,12 +69,19 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
   async function saveEdit(current: Note) {
     const value = draft.trim()
     if (!value) return
-    if (value === current.text) {
+    // Упоминания, которые из текста стёрли, не привязываем
+    const picked = pruneMentions(draft, mentions, cards ?? [])
+    if (value === current.text && picked.length === 0) {
       setEditing(false)
       return
     }
     try {
-      await updateNote(id, { text: value })
+      if (picked.length === 0) {
+        await updateNote(id, { text: value })
+      } else {
+        const base = linked.map((l) => ({ cardId: l.card.id, role: l.role }))
+        await completeNote(id, { text: value, ...buildCompletion(base, picked) })
+      }
       setEditing(false)
     } catch {
       setError(true)
@@ -98,10 +119,12 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
         <label className="sr-only" htmlFor="note-draft">
           Текст записи
         </label>
-        <textarea
+        <MentionTextarea
           id="note-draft"
+          cards={cards ?? []}
           value={draft}
-          onChange={(e) => setDraft(e.target.value)}
+          onChange={setDraft}
+          onPick={(p) => setMentions((list) => [...list, p])}
           onKeyDown={(e) => {
             if (e.key === 'Escape') setEditing(false)
             if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
@@ -120,7 +143,20 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
     <main className="card">
       {back}
       <h1>Запись</h1>
-      <p className="card-text">{note.text}</p>
+      <p className="card-text">
+        {splitMentions(
+          note.text,
+          linked.map((l) => ({ id: l.card.id, name: l.card.name })),
+        ).map((part, i) =>
+          part.cardId ? (
+            <a key={i} className="mention" href={`#/card/${encodeURIComponent(part.cardId)}`}>
+              {part.text}
+            </a>
+          ) : (
+            part.text
+          ),
+        )}
+      </p>
 
       <span className={isApproximate(note) ? 'when approx' : 'when'}>
         {describeEvent(note.event, now)}
