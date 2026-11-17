@@ -15,3 +15,5 @@
 
 Схема архитектуры лежит рядом: docs/architecture.png и docs/architecture.svg.
 Полный перечень технологий с причинами: docs/stack.txt.
+Стратегия тестирования: docs/testing-strategy.txt.
+Замеры скорости: docs/performance.txt.
