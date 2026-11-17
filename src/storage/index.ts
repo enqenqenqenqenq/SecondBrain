@@ -22,4 +22,5 @@ export {
   isValidEvent,
 } from './fuzzyTime'
 export type { Season } from './fuzzyTime'
+export { seedNotes, removeSeededNotes, generateNotes, SEED_TAG } from './seed'
 export type { Note, NotePatch, EventTime, Precision, ListOptions } from './types'

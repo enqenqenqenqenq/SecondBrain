@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import BottomNav from './BottomNav'
+import Dev from './Dev'
 import Feed from './Feed'
 import NoteCard from './NoteCard'
 import QuickEntry from './QuickEntry'
@@ -40,6 +41,7 @@ export default function App() {
       {route.name === 'unreviewed' && <Unreviewed />}
       {route.name === 'note' && <NoteCard id={route.id} onDelete={(id) => void remove(id)} />}
       {route.name === 'entry' && <QuickEntry />}
+      {import.meta.env.DEV && route.name === 'dev' && <Dev />}
       <Toast toast={toast} onUndo={(id) => void undoRemove(id)} onClose={closeToast} />
       <BottomNav route={route} />
     </>
