@@ -1,16 +1,11 @@
 import { useEffect, useState } from 'react'
 
 export type Route =
-  | { name: 'entry' }
-  | { name: 'feed' }
-  | { name: 'unreviewed' }
-  | { name: 'note'; id: string }
-  | { name: 'dev' }
+  { name: 'entry' } | { name: 'feed' } | { name: 'note'; id: string } | { name: 'dev' }
 
 const read = (): Route => {
   const hash = window.location.hash
   if (hash === '#/feed') return { name: 'feed' }
-  if (hash === '#/unreviewed') return { name: 'unreviewed' }
   // Служебная страница есть только при разработке
   if (hash === '#/dev' && import.meta.env.DEV) return { name: 'dev' }
   const note = /^#\/note\/(.+)$/.exec(hash)

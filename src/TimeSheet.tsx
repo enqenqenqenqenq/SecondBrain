@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { describeEvent } from './storage'
-import type { EventTime } from './storage'
+import type { EventTime, Precision } from './storage'
 import {
   MONTH_NAMES,
   PRECISIONS,
@@ -49,11 +49,16 @@ export default function TimeSheet({
   now,
   onSave,
   onClose,
+  title = 'Время и точность',
+  precisions,
 }: {
   event: EventTime
   now: Date
   onSave: (event: EventTime) => void
   onClose: () => void
+  title?: string
+  // Какие точности можно выбрать. Для фильтра по периоду минута не нужна.
+  precisions?: Precision[]
 }) {
   const ref = useRef<HTMLDialogElement>(null)
   const [draft, setDraft] = useState<TimeDraft>(() => draftFromEvent(event))
@@ -91,14 +96,14 @@ export default function TimeSheet({
       }}
     >
       <div className="sheet-head">
-        <h2 id="sheet-title">Время и точность</h2>
+        <h2 id="sheet-title">{title}</h2>
         <button type="button" className="link-button" onClick={onClose}>
           Отмена
         </button>
       </div>
 
       <div className="chips" role="group" aria-label="Точность">
-        {PRECISIONS.map((p) => (
+        {PRECISIONS.filter((p) => !precisions || precisions.includes(p.value)).map((p) => (
           <button
             key={p.value}
             type="button"

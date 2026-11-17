@@ -7,7 +7,7 @@ const TABS: { route: 'entry' | 'feed'; href: string; label: string }[] = [
 ]
 
 export default function BottomNav({ route }: { route: Route }) {
-  // Неразобранные и карточка записи открываются из ленты, поэтому подсвечиваем вкладку «Лента»
+  // Карточка записи открывается из ленты, поэтому подсвечиваем вкладку «Лента»
   const tab = route.name === 'entry' ? 'entry' : 'feed'
   return (
     <nav className="nav" aria-label="Разделы">

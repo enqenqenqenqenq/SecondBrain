@@ -6,7 +6,6 @@ import NoteCard from './NoteCard'
 import QuickEntry from './QuickEntry'
 import Toast from './Toast'
 import type { ToastState } from './Toast'
-import Unreviewed from './Unreviewed'
 import { deleteNote, restoreNote } from './storage'
 import { useHashRoute } from './useHashRoute'
 
@@ -38,7 +37,6 @@ export default function App() {
   return (
     <>
       {route.name === 'feed' && <Feed />}
-      {route.name === 'unreviewed' && <Unreviewed />}
       {route.name === 'note' && <NoteCard id={route.id} onDelete={(id) => void remove(id)} />}
       {route.name === 'entry' && <QuickEntry />}
       {import.meta.env.DEV && route.name === 'dev' && <Dev />}
