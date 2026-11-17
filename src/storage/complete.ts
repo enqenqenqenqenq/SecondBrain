@@ -15,6 +15,8 @@ export interface CompleteInput {
   newCards?: NewCard[]
   // Полный список карточек записи после дополнения. Что в нём отсутствует, будет отвязано.
   links: CompleteLink[]
+  // Пометить запись дополненной в той же транзакции. Уже помеченная остаётся с прежним временем отметки.
+  markReviewed?: boolean
 }
 
 export interface CompleteResult {
@@ -26,7 +28,7 @@ const sameEvent = (a: EventTime, b: EventTime) =>
   a.precision === b.precision && a.from === b.from && a.to === b.to
 
 // Дополнение записи одним действием: текст, время и привязки сохраняются вместе или не сохраняются совсем.
-// Запись не помечается дополненной, это отдельное действие.
+// Дополненной запись помечается только по просьбе (markReviewed), иначе отметка остаётся прежней.
 export async function completeNote(noteId: string, input: CompleteInput): Promise<CompleteResult> {
   const text = input.text === undefined ? undefined : input.text.trim()
   if (text === '') throw new Error('Текст записи не может быть пустым')
@@ -129,12 +131,14 @@ export async function completeNote(noteId: string, input: CompleteInput): Promis
     // Запись
     const textChanged = text !== undefined && text !== note.text
     const eventChanged = input.event !== undefined && !sameEvent(input.event, note.event)
+    const marked = input.markReviewed === true && note.reviewedAt === null
     let result = note
-    if (textChanged || eventChanged) {
+    if (textChanged || eventChanged || marked) {
       result = {
         ...note,
         ...(textChanged && { text }),
         ...(eventChanged && { event: input.event, timeIsAuto: false }),
+        ...(marked && { reviewedAt: now }),
         updatedAt: now,
         rev: note.rev + 1,
         clock: bumpClock(note.clock, deviceId),

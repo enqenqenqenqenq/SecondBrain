@@ -7,9 +7,11 @@ import {
   deleteCard,
   deleteNote,
   linkNote,
+  markReviewed,
   restoreCard,
   restoreNote,
   unlinkNote,
+  unmarkReviewed,
   updateCard,
   updateNote,
 } from './index'
@@ -123,5 +125,25 @@ describe('дополнение записи', () => {
     expect(of(keep.id).clock).toEqual({ 'dev-a': 1 }) // не менялась
     expect(of(drop.id).clock).toEqual({ 'dev-a': 1, 'dev-b': 1 }) // отвязана
     expect(of(createdCards[0].id).clock).toEqual({ 'dev-b': 1 }) // новая
+  })
+})
+
+describe('отметка «дополнено»', () => {
+  it('ставится и снимается правкой этого устройства, повтор без изменений не считается', async () => {
+    const note = await createNote('раз')
+    await useDevice('dev-b')
+    await markReviewed(note.id)
+    await markReviewed(note.id)
+    expect((await db.notes.get(note.id))?.clock).toEqual({ 'dev-a': 1, 'dev-b': 1 })
+    await unmarkReviewed(note.id)
+    await unmarkReviewed(note.id)
+    expect((await db.notes.get(note.id))?.clock).toEqual({ 'dev-a': 1, 'dev-b': 2 })
+  })
+
+  it('отметка вместе с дополнением тоже прибавляет одну правку', async () => {
+    const note = await createNote('раз')
+    await useDevice('dev-b')
+    await completeNote(note.id, { text: 'два', links: [], markReviewed: true })
+    expect((await db.notes.get(note.id))?.clock).toEqual({ 'dev-a': 1, 'dev-b': 1 })
   })
 })

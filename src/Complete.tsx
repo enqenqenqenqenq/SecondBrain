@@ -122,7 +122,7 @@ export default function Complete({ id }: { id: string }) {
       list.map((i) => (i.key === key ? { ...i, role: NEXT_ROLE[i.role ?? 'none'] } : i)),
     )
 
-  async function save() {
+  async function save(markReviewed = false) {
     if (saving || !text.trim() || !event) return
     setSaving(true)
     setError(false)
@@ -131,6 +131,7 @@ export default function Complete({ id }: { id: string }) {
       await completeNote(id, {
         text,
         event,
+        markReviewed,
         newCards: fresh.map((i) => i.newCard!),
         links: items.map((i) =>
           i.cardId
@@ -226,6 +227,19 @@ export default function Complete({ id }: { id: string }) {
       </ul>
 
       {error && <p className="empty">Не удалось сохранить. Всё введённое осталось на экране.</p>}
+
+      {note.reviewedAt === null && (
+        <div className="actions">
+          <button
+            type="button"
+            className="primary"
+            disabled={saving || !text.trim()}
+            onClick={() => void save(true)}
+          >
+            Сохранить и отметить дополненной
+          </button>
+        </div>
+      )}
 
       {timeOpen && (
         <TimeSheet

@@ -11,6 +11,8 @@ import {
   watchNotes,
   watchNote,
   isUnreviewed,
+  markReviewed,
+  unmarkReviewed,
 } from './index'
 import type { EventTime } from './types'
 
@@ -297,6 +299,83 @@ describe('наблюдение за одной записью', () => {
     await updateNote(other.id, { text: 'чужая изменена' })
     await new Promise((r) => setTimeout(r, 50))
     expect(seen.every((x) => x === undefined)).toBe(true)
+    stop()
+  })
+})
+
+describe('отметка «дополнено»', () => {
+  it('ставит время отметки, запись уходит из неразобранных и остаётся в ленте', async () => {
+    const a = await createNote('быстрая')
+    const b = await createNote('другая')
+    const done = (await markReviewed(a.id))!
+    expect(done.reviewedAt).toBeGreaterThan(0)
+    expect(done.text).toBe('быстрая')
+    expect(done.rev).toBe(a.rev + 1)
+    const notes = await listNotes()
+    expect(notes).toHaveLength(2)
+    expect(notes.filter(isUnreviewed).map((n) => n.id)).toEqual([b.id])
+  })
+
+  it('повторная отметка ничего не меняет: время и номер правки прежние', async () => {
+    const a = await createNote('раз')
+    const first = (await markReviewed(a.id))!
+    const second = (await markReviewed(a.id))!
+    expect(second).toEqual(first)
+    expect((await db.notes.get(a.id))?.rev).toBe(first.rev)
+  })
+
+  it('двойное нажатие подряд даёт одну правку', async () => {
+    const a = await createNote('раз')
+    await Promise.all([markReviewed(a.id), markReviewed(a.id)])
+    expect((await db.notes.get(a.id))?.rev).toBe(a.rev + 1)
+  })
+
+  it('снятие отметки возвращает запись в неразобранные, повторное снятие ничего не меняет', async () => {
+    const a = await createNote('вернуть')
+    await markReviewed(a.id)
+    const back = (await unmarkReviewed(a.id))!
+    expect(back.reviewedAt).toBeNull()
+    expect(isUnreviewed(back)).toBe(true)
+    expect(back.rev).toBe(a.rev + 2)
+    await unmarkReviewed(a.id)
+    expect((await db.notes.get(a.id))?.rev).toBe(a.rev + 2)
+  })
+
+  it('неразобранную запись снимать нечего: номер правки не растёт', async () => {
+    const a = await createNote('новая')
+    expect(await unmarkReviewed(a.id)).toEqual(a)
+  })
+
+  it('нет такой записи или она удалена: undefined, ничего не меняется', async () => {
+    expect(await markReviewed('нет')).toBeUndefined()
+    expect(await unmarkReviewed('нет')).toBeUndefined()
+    const a = await createNote('лишняя')
+    await deleteNote(a.id)
+    const before = await db.notes.get(a.id)
+    expect(await markReviewed(a.id)).toBeUndefined()
+    expect(await unmarkReviewed(a.id)).toBeUndefined()
+    expect(await db.notes.get(a.id)).toEqual(before)
+  })
+
+  it('отметка переживает правку текста и возвращение удалённой записи', async () => {
+    const a = await createNote('до')
+    await markReviewed(a.id)
+    const stamp = (await getNote(a.id))!.reviewedAt
+    await updateNote(a.id, { text: 'после' })
+    await deleteNote(a.id)
+    await restoreNote(a.id)
+    expect((await getNote(a.id))?.reviewedAt).toBe(stamp)
+  })
+
+  it('слежение за записью сообщает о смене отметки', async () => {
+    const a = await createNote('смотрим')
+    const seen: (number | null | undefined)[] = []
+    const stop = watchNote(a.id, (n) => seen.push(n?.reviewedAt))
+    await vi.waitFor(() => expect(seen).toEqual([null]))
+    await markReviewed(a.id)
+    await vi.waitFor(() => expect(seen.at(-1)).toEqual(expect.any(Number)))
+    await unmarkReviewed(a.id)
+    await vi.waitFor(() => expect(seen.at(-1)).toBeNull())
     stop()
   })
 })

@@ -317,3 +317,62 @@ describe('дополнение: всё или ничего', () => {
     expect(await snapshot()).toEqual(after)
   })
 })
+
+describe('дополнение с отметкой «дополнено»', () => {
+  it('текст, время, привязки и отметка записываются одним действием', async () => {
+    const note = await createNote('позвонить')
+    const { note: done } = await completeNote(note.id, {
+      text: 'позвонить после работы',
+      newCards: [{ kind: 'place', name: 'Офис' }],
+      links: [{ newCard: 0 }],
+      markReviewed: true,
+    })
+    expect(done.reviewedAt).toBeGreaterThan(0)
+    expect(done.rev).toBe(2)
+    expect(await getNote(note.id)).toEqual(done)
+    expect(await listCardsOfNote(note.id)).toHaveLength(1)
+  })
+
+  it('отметка ставится и тогда, когда текст, время и привязки не менялись', async () => {
+    const note = await createNote('как есть')
+    const { note: done } = await completeNote(note.id, { links: [], markReviewed: true })
+    expect(done.reviewedAt).toBeGreaterThan(0)
+    expect(done.text).toBe('как есть')
+    expect(done.rev).toBe(2)
+  })
+
+  it('без просьбы запись неразобранной и остаётся', async () => {
+    const note = await createNote('раз')
+    const { note: done } = await completeNote(note.id, { text: 'два', links: [] })
+    expect(done.reviewedAt).toBeNull()
+    const again = await completeNote(note.id, { links: [], markReviewed: false })
+    expect(again.note.reviewedAt).toBeNull()
+  })
+
+  it('уже отмеченная запись сохраняет прежнее время отметки и не получает лишней правки', async () => {
+    const note = await createNote('раз')
+    await completeNote(note.id, { links: [], markReviewed: true })
+    const marked = (await getNote(note.id))!
+    const { note: again } = await completeNote(note.id, { links: [], markReviewed: true })
+    expect(again.reviewedAt).toBe(marked.reviewedAt)
+    expect(again.rev).toBe(marked.rev)
+  })
+
+  it('ошибка в любом месте отменяет и отметку', async () => {
+    const note = await createNote('раз')
+    const before = await snapshot()
+    await expect(
+      completeNote(note.id, { text: '  ', links: [], markReviewed: true }),
+    ).rejects.toThrow()
+    await expect(
+      completeNote(note.id, { links: [{ cardId: 'нет такой' }], markReviewed: true }),
+    ).rejects.toThrow()
+    expect(await snapshot()).toEqual(before)
+  })
+
+  it('удалённая запись не отмечается', async () => {
+    const note = await createNote('раз')
+    await deleteNote(note.id)
+    await expect(completeNote(note.id, { links: [], markReviewed: true })).rejects.toThrow()
+  })
+})

@@ -36,6 +36,8 @@ export function sameContent(a: Syncable, b: Syncable): boolean {
     for (const key of ['rev', 'clock', 'updatedAt', 'deviceId']) delete copy[key]
     // Копия, которую уже разобрали (null), и обычная запись (нет поля) одно и то же
     if (copy.conflictOf === null) delete copy.conflictOf
+    // Запись отметили дополненной на двух устройствах в разное время: отметка есть у обеих, это одно и то же
+    if (typeof copy.reviewedAt === 'number') copy.reviewedAt = true
     return JSON.stringify(sortKeys(copy))
   }
   return comparable(a) === comparable(b)
@@ -113,14 +115,33 @@ export async function mergeObject<T extends Syncable>(
   // одним и тем же: остаток текста у удалённого ни на что не влияет, а при возвращении запись станет новой
   // правкой и пройдёт обычные правила.
   if (sameContent(local, remote)) {
-    return {
-      action: 'apply',
-      object: {
-        ...remote,
-        clock: mergeClocks(local.clock, remote.clock),
-        rev: Math.max(local.rev, remote.rev),
-      },
+    const joined: T = {
+      ...remote,
+      clock: mergeClocks(local.clock, remote.clock),
+      rev: Math.max(local.rev, remote.rev),
     }
+    // Время отметки «дополнено» у двух устройств разное. Берём раннее: оба устройства выберут одно и то же.
+    const both = [local, remote].map((o) => (o as { reviewedAt?: unknown }).reviewedAt)
+    if (typeof both[0] === 'number' && typeof both[1] === 'number') {
+      Object.assign(joined, { reviewedAt: Math.min(both[0], both[1]) })
+    }
+    // Если итог отличается от пришедшего, другие устройства о нём не знают: это новая правка, её надо отправить
+    const fresh =
+      (joined as { reviewedAt?: unknown }).reviewedAt !==
+      (remote as { reviewedAt?: unknown }).reviewedAt
+    if (fresh) {
+      return {
+        action: 'conflict',
+        object: {
+          ...joined,
+          clock: bumpClock(joined.clock, own),
+          rev: joined.rev + 1,
+          deviceId: own,
+        },
+        copy: null,
+      }
+    }
+    return { action: 'apply', object: joined }
   }
 
   const winner = pickWinner(local, remote)

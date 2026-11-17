@@ -193,6 +193,58 @@ describe('копия при конфликте', () => {
   })
 })
 
+describe('отметка «дополнено» при слиянии', () => {
+  it('отметили на двух устройствах в разное время: это не конфликт, оба берут раннее время', async () => {
+    const start = base()
+    const onA = edit(start, 'a', { reviewedAt: 500 }, 500)
+    const onB = edit(start, 'b', { reviewedAt: 300 }, 300)
+    expect(sameContent(onA, onB)).toBe(true)
+    // Устройство с поздним временем получает раннее: итог совпадает с пришедшим, отправлять нечего
+    const atA = await mergeNote(onA, onB, 'a')
+    expect(atA.action).toBe('apply')
+    if (atA.action === 'apply') expect(atA.object.reviewedAt).toBe(300)
+    // Устройство с ранним временем получает позднее: другие устройства его раннего времени не знают,
+    // поэтому итог это новая правка, которую надо отправить
+    const atB = await mergeNote(onB, onA, 'b')
+    expect(atB.action).toBe('conflict')
+    if (atB.action !== 'conflict') return
+    expect(atB.copy).toBeNull()
+    expect(atB.object.reviewedAt).toBe(300)
+    expect(atB.object.clock).toEqual({ a: 2, b: 2 })
+    expect(atB.object.rev).toBe(3)
+    // Устройство с поздним временем принимает этот итог без нового конфликта
+    expect((await mergeNote(onA, atB.object, 'a')).action).toBe('apply')
+  })
+
+  it('отметили на одном, а на другом правили текст: это конфликт, текст не теряется', async () => {
+    const start = base()
+    const marked = edit(start, 'a', { reviewedAt: 500 }, 500)
+    const edited = edit(start, 'b', { text: 'новый текст' }, 400)
+    const result = await mergeNote(edited, marked, 'b')
+    expect(result.action).toBe('conflict')
+    if (result.action !== 'conflict') return
+    const texts = [result.object.text, result.copy?.text]
+    expect(texts).toContain('новый текст')
+    expect(texts).toContain('исходный текст')
+  })
+
+  it('отметили на одном, на другом ничего не менялось: отметка принимается', async () => {
+    const start = base()
+    const marked = edit(start, 'a', { reviewedAt: 500 }, 500)
+    expect(await mergeNote(start, marked, 'b')).toEqual({ action: 'apply', object: marked })
+  })
+
+  it('на одном сняли отметку, на другом поставили заново и правили текст: побеждает позднее', async () => {
+    const start = base({ reviewedAt: 100 })
+    const unmarked = edit(start, 'a', { reviewedAt: null }, 600)
+    const remarked = edit(start, 'b', { reviewedAt: 200, text: 'иначе' }, 300)
+    const result = await mergeNote(remarked, unmarked, 'b')
+    expect(result.action).toBe('conflict')
+    if (result.action !== 'conflict') return
+    expect(result.object.reviewedAt).toBeNull()
+  })
+})
+
 describe('сравнение содержимого', () => {
   it('служебные поля правки не считаются', () => {
     const a = base()
@@ -205,6 +257,7 @@ describe('сравнение содержимого', () => {
     expect(sameContent(a, base({ text: 'другой' }))).toBe(false)
     expect(sameContent(a, base({ tagIds: ['x'] }))).toBe(false)
     expect(sameContent(a, base({ reviewedAt: 1 }))).toBe(false)
+    expect(sameContent(base({ reviewedAt: 1 }), base({ reviewedAt: 2 }))).toBe(true)
     expect(sameContent(a, base({ conflictOf: 'x' }))).toBe(false)
     expect(sameContent(a, base({ event: { ...a.event, to: '2026-01-02T10:00' } }))).toBe(false)
   })

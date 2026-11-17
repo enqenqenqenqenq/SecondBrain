@@ -362,6 +362,69 @@ describe('два устройства: одновременные правки',
   })
 })
 
+describe('отметка «дополнено» на двух устройствах', () => {
+  const reviewedOf = (d: MemoryLocal, id: string) => d.notes.get(id)?.reviewedAt ?? null
+
+  it('отметка с одного устройства доходит до другого', async () => {
+    const a = device('a')
+    const b = device('b')
+    const remote = new MemoryRemote()
+    a.addNote('n1', 'запись')
+    await everyone([a, b], remote)
+    a.editNote('n1', { reviewedAt: currentTime() })
+    await everyone([a, b], remote)
+    expect(reviewedOf(b, 'n1')).not.toBeNull()
+    expect(reviewedOf(b, 'n1')).toBe(reviewedOf(a, 'n1'))
+  })
+
+  it('одну запись отметили на обоих устройствах: копии нет, время у обоих одно и то же', async () => {
+    const a = device('a')
+    const b = device('b')
+    const remote = new MemoryRemote()
+    a.addNote('n1', 'запись')
+    await everyone([a, b], remote)
+    a.editNote('n1', { reviewedAt: 1000 })
+    advanceTime(5000)
+    b.editNote('n1', { reviewedAt: 6000 })
+    await everyone([a, b], remote)
+    expect(a.notes.size).toBe(1)
+    expect(b.notes.size).toBe(1)
+    expect(reviewedOf(a, 'n1')).toBe(1000)
+    expect(reviewedOf(b, 'n1')).toBe(1000)
+    expect(converged([a, b])).toBe(true)
+  })
+
+  it('отметили в одном месте, правили текст в другом: оба текста сохранены', async () => {
+    const a = device('a')
+    const b = device('b')
+    const remote = new MemoryRemote()
+    a.addNote('n1', 'запись')
+    await everyone([a, b], remote)
+    a.editNote('n1', { reviewedAt: currentTime() })
+    advanceTime(1000)
+    b.editNote('n1', { text: 'запись, правка B' })
+    await everyone([a, b], remote)
+    expect(texts(a)).toEqual(['запись', 'запись, правка B'])
+    expect(converged([a, b])).toBe(true)
+  })
+
+  it('отметили на трёх устройствах в разное время: все сходятся к раннему', async () => {
+    const [a, b, c] = [device('a'), device('b'), device('c')]
+    const remote = new MemoryRemote()
+    a.addNote('n1', 'запись')
+    await everyone([a, b, c], remote)
+    a.editNote('n1', { reviewedAt: 900 })
+    b.editNote('n1', { reviewedAt: 400 })
+    c.editNote('n1', { reviewedAt: 700 })
+    await everyone([a, b, c], remote, 6)
+    for (const d of [a, b, c]) {
+      expect(reviewedOf(d, 'n1')).toBe(400)
+      expect(d.notes.size).toBe(1)
+    }
+    expect(converged([a, b, c])).toBe(true)
+  })
+})
+
 describe('потеря связи в середине передачи', () => {
   it('обрыв на шестом из десяти сегментов: повтор отправляет остальное, дублей и потерь нет', async () => {
     const a = device('a')

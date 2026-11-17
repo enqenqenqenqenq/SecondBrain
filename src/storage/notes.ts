@@ -57,14 +57,20 @@ export async function countNotes(): Promise<number> {
   return db.notes.filter((n) => n.deletedAt === null).count()
 }
 
-async function touch(id: string, change: (n: Note) => Partial<Note>): Promise<Note | undefined> {
+// change возвращает null, если менять нечего: правка тогда не записывается и номер не растёт
+async function touch(
+  id: string,
+  change: (n: Note) => Partial<Note> | null,
+): Promise<Note | undefined> {
   const deviceId = await getDeviceId()
   return db.transaction('rw', db.notes, async () => {
     const current = await db.notes.get(id)
     if (!current) return undefined
+    const patch = change(current)
+    if (!patch) return current
     const next: Note = {
       ...current,
-      ...change(current),
+      ...patch,
       updatedAt: Date.now(),
       rev: current.rev + 1,
       clock: bumpClock(current.clock, deviceId),
@@ -89,6 +95,23 @@ export async function updateNote(id: string, patch: NotePatch): Promise<Note | u
     ...(patch.reviewedAt !== undefined && { reviewedAt: patch.reviewedAt }),
     ...(patch.conflictOf !== undefined && { conflictOf: patch.conflictOf }),
   }))
+}
+
+// Отметка «дополнено»: запись уходит из неразобранных и остаётся в ленте. Повторная отметка ничего не меняет.
+// Возвращает запись, а если её нет или она удалена, undefined.
+export async function markReviewed(id: string): Promise<Note | undefined> {
+  const note = await touch(id, (n) =>
+    n.deletedAt !== null || n.reviewedAt !== null ? null : { reviewedAt: Date.now() },
+  )
+  return note && note.deletedAt === null ? note : undefined
+}
+
+// Снять отметку: запись снова неразобранная
+export async function unmarkReviewed(id: string): Promise<Note | undefined> {
+  const note = await touch(id, (n) =>
+    n.deletedAt !== null || n.reviewedAt === null ? null : { reviewedAt: null },
+  )
+  return note && note.deletedAt === null ? note : undefined
 }
 
 // Мягкое удаление: запись остаётся в базе, чтобы другое устройство узнало об удалении

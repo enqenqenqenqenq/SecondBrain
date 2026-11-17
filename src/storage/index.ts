@@ -7,6 +7,8 @@ export {
   updateNote,
   deleteNote,
   restoreNote,
+  markReviewed,
+  unmarkReviewed,
   watchNotes,
   watchNote,
   isUnreviewed,

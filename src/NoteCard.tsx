@@ -8,7 +8,9 @@ import {
   completeNote,
   describeEvent,
   eventAt,
+  markReviewed,
   resolveConflict,
+  unmarkReviewed,
   updateNote,
   watchCardsOfNote,
   watchConflictCopies,
@@ -38,6 +40,7 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
   const [draft, setDraft] = useState('')
   const [error, setError] = useState(false)
   const [timeOpen, setTimeOpen] = useState(false)
+  const [markError, setMarkError] = useState(false)
   const [linked, setLinked] = useState<CardOfNote[]>([])
   const [mentions, setMentions] = useState<Picked[]>([])
   // Если запись это копия при конфликте, здесь запись, из которой она получилась. И копии этой записи.
@@ -88,6 +91,17 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
     setMentions([])
     setError(false)
     setEditing(true)
+  }
+
+  // Отметка «дополнено» ставится и снимается сразу
+  async function toggleReviewed(current: Note) {
+    try {
+      if (current.reviewedAt === null) await markReviewed(id)
+      else await unmarkReviewed(id)
+      setMarkError(false)
+    } catch {
+      setMarkError(true)
+    }
   }
 
   async function saveEdit(current: Note) {
@@ -253,11 +267,20 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
       )}
 
       <p className="hint">Записано: {describeEvent(eventAt(new Date(note.createdAt)), now)}</p>
+      {note.reviewedAt !== null && (
+        <p className="hint reviewed">
+          Дополнено: {describeEvent(eventAt(new Date(note.reviewedAt)), now)}
+        </p>
+      )}
+      {markError && <p className="empty">Не удалось сохранить отметку</p>}
 
       <div className="actions">
         <a className="button primary" href={`#/complete/${encodeURIComponent(id)}`}>
           Дополнить
         </a>
+        <button type="button" className="secondary" onClick={() => void toggleReviewed(note)}>
+          {note.reviewedAt === null ? 'Отметить дополненной' : 'Снять отметку'}
+        </button>
         <button type="button" className="secondary" onClick={() => startEdit(note)}>
           Изменить
         </button>
