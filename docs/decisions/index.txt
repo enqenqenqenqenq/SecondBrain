@@ -10,3 +10,5 @@
 6. 0006-event-time.txt. Время события как период с разной точностью.
 7. 0007-assistant.txt. Помощник по собственному ключу, необязательный.
 8. 0008-license.txt. Лицензия AGPL-3.0.
+
+Схема архитектуры лежит рядом: docs/architecture.png и docs/architecture.svg.
