@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { passwordStrength } from './crypto/vault'
+import { download } from './download'
+import { backupFileName } from './backupText'
+import { exportData, serializeExport } from './storage'
 import { sync, useSync } from './sync'
 import { STRENGTH, describeError, lastAtText, statusText } from './sync/messages'
 import './SyncSection.css'
@@ -16,6 +19,7 @@ export default function SyncSection() {
   const [remember, setRemember] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [saved, setSaved] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -29,6 +33,27 @@ export default function SyncSection() {
     setPassword('')
     setRepeat('')
     setError('')
+    setSaved(false)
+  }
+
+  // Копия данных на случай, если пароль забудется: она остаётся у человека и не зашифрована
+  const saveCopy = () =>
+    run(async () => {
+      const now = new Date()
+      download(
+        serializeExport(await exportData(now)),
+        backupFileName(now, 'json'),
+        'application/json',
+      )
+      setSaved(true)
+    })
+
+  async function changeRemember(value: boolean) {
+    setError('')
+    const result = await sync.setRemember(value)
+    if (result === 'unsupported')
+      setError('Браузер не позволил запомнить пароль на этом устройстве')
+    if (result === 'needs-password') setError('Введите пароль, чтобы запомнить его')
   }
   const close = () => {
     setDialog(null)
@@ -159,6 +184,17 @@ export default function SyncSection() {
       )}
 
       {connected && status.kind !== 'password' && (
+        <label className="sync-check sync-remember">
+          <input
+            type="checkbox"
+            checked={state.remember}
+            onChange={(e) => void changeRemember(e.target.checked)}
+          />
+          Запоминать пароль на этом устройстве
+        </label>
+      )}
+
+      {connected && status.kind !== 'password' && (
         <div className="settings-buttons">
           <button
             type="button"
@@ -207,14 +243,31 @@ export default function SyncSection() {
       )}
 
       {connected && status.kind === 'password' && (
-        <button
-          type="button"
-          className="settings-button danger-outline"
-          disabled={busy}
-          onClick={() => setDialog('disconnect')}
-        >
-          Отключить
-        </button>
+        <div className="settings-buttons">
+          <p className="hint">
+            Забыли пароль? Восстановить его нельзя, но данные не потеряны, пока они есть на этом или
+            на другом устройстве: можно начать хранилище заново с новым паролем.
+          </p>
+          <button
+            type="button"
+            className="settings-button secondary"
+            disabled={busy}
+            onClick={() => {
+              reset()
+              setDialog('restart')
+            }}
+          >
+            Забыли пароль? Начать хранилище заново
+          </button>
+          <button
+            type="button"
+            className="settings-button danger-outline"
+            disabled={busy}
+            onClick={() => setDialog('disconnect')}
+          >
+            Отключить
+          </button>
+        </div>
       )}
 
       {error && dialog === null && <p className="settings-error">{error}</p>}
@@ -265,10 +318,20 @@ export default function SyncSection() {
               </h2>
               <div className="sync-body">
                 {dialog === 'create' && (
-                  <p>
-                    Пароль шифрует данные. Забытый пароль восстановить нельзя, а без него данные на
-                    Диске не прочитать.
-                  </p>
+                  <>
+                    <p>
+                      Пароль шифрует данные. Забытый пароль восстановить нельзя, а без него данные
+                      на Диске не прочитать.
+                    </p>
+                    <button
+                      type="button"
+                      className="sync-copy"
+                      disabled={busy}
+                      onClick={() => void saveCopy()}
+                    >
+                      {saved ? 'Копия сохранена' : 'Сохранить копию данных на всякий случай'}
+                    </button>
+                  </>
                 )}
                 {dialog === 'restart' && (
                   <p>

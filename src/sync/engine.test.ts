@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createVault } from '../crypto/vault'
 import { KEEP_DAYS, SEGMENT_SIZE, SNAPSHOT_AFTER, resendAll, runSync } from './engine'
-import { makeCodec, parseName } from './format'
+import { decompress, makeCodec, parseName } from './format'
+import { fromBase64 } from '../crypto/vault'
 import { MemoryLocal, MemoryRemote, advanceTime, currentTime } from './testing'
 import type { Codec } from './types'
 
@@ -348,6 +349,98 @@ describe('сбои', () => {
     await expect(sync(a, remote)).rejects.toThrow('Сбой Диска')
     expect((await a.collectDirty()).length).toBe(1)
     expect(remote.names()).toEqual([])
+  })
+})
+
+describe('сжатие', () => {
+  it('круг для разных данных, пустых тоже', async () => {
+    const { compress } = await import('./format')
+    for (const sample of ['', 'a', 'слово '.repeat(50_000)]) {
+      const bytes = new TextEncoder().encode(sample)
+      expect(await decompress(await compress(bytes))).toEqual(bytes)
+    }
+  })
+
+  it('не сжатые данные отклоняются ошибкой, а не необработанным отказом', async () => {
+    await expect(decompress(new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]))).rejects.toThrow()
+    await expect(decompress(new Uint8Array())).rejects.toThrow()
+  })
+})
+
+describe('что видит Диск', () => {
+  it('в файлах нет ни текста записей, ни имён, ни адресов, ни времени события, ни номеров объектов', async () => {
+    const a = device('a')
+    const remote = new MemoryRemote()
+    const note = a.addNote('особая-запись-123', 'Секретная фраза про Аптеку на Невском')
+    a.editNote(note.id, { text: 'Вторая секретная версия' })
+    const card = a.addCard('особая-карточка-456', 'Человек Секретов')
+    card.address = 'улица Тайная 7'
+    a.addLink('особая-связь-789', note.id, card.id)
+    await sync(a, remote)
+    a.editNote(note.id, { text: 'Третья секретная версия' })
+    await sync(a, remote)
+    expect(remote.names().some((n) => n.startsWith('seg-'))).toBe(true)
+    expect(remote.names().some((n) => n.startsWith('snap-'))).toBe(true)
+    const everything = [...remote.files.values()].map((f) => f.content).join('\n')
+    for (const secret of [
+      'Секретная',
+      'секретная',
+      'Аптек',
+      'Невском',
+      'Человек Секретов',
+      'особая-',
+      '2026-01-01',
+      'precision',
+      'deletedAt',
+      'text',
+      'Тайная',
+    ]) {
+      expect(everything, secret).not.toContain(secret)
+    }
+  })
+
+  it('содержимое это шифр, а не просто сжатый текст: без ключа оно не разворачивается', async () => {
+    const a = device('a')
+    const remote = new MemoryRemote()
+    a.addNote('n1', 'Секретная фраза')
+    await sync(a, remote)
+    expect(remote.files.size).toBeGreaterThan(0)
+    for (const file of remote.files.values()) {
+      const envelope = JSON.parse(file.content) as {
+        v: number
+        iv: string
+        data: string
+        z?: number
+      }
+      expect(envelope.v).toBe(1)
+      expect(fromBase64(envelope.iv)).toHaveLength(12)
+      // если бы текст только сжали, он бы развернулся обратно
+      await expect(decompress(fromBase64(envelope.data))).rejects.toThrow()
+    }
+  })
+
+  it('а имена файлов говорят только об устройстве и номере', async () => {
+    const a = device('a')
+    const remote = new MemoryRemote()
+    a.addNote('n1', 'раз')
+    await sync(a, remote)
+    a.editNote('n1', { text: 'два' })
+    await sync(a, remote)
+    for (const name of remote.names()) expect(name).toMatch(/^(seg-a-\d{6}|snap-\d{13}-a)\.sb$/)
+  })
+
+  it('без пароля (чужим ключом) ни один файл не читается', async () => {
+    const a = device('a')
+    const remote = new MemoryRemote()
+    a.addNote('n1', 'раз')
+    await sync(a, remote)
+    a.editNote('n1', { text: 'два' })
+    await sync(a, remote)
+    for (const [id, file] of remote.files) {
+      await expect(otherCodec.decode(file.name, file.content), id).rejects.toMatchObject({
+        code: 'bad-file',
+      })
+    }
   })
 })
 

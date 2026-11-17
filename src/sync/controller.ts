@@ -89,6 +89,8 @@ export interface Controller {
   disconnect(): Promise<void>
   // Удалить файлы приложения на Диске и создать хранилище заново с новым паролем из местных данных
   restartVault(password: string, remember: boolean): Promise<void>
+  // Запоминать ли ключ на этом устройстве. Выключение удаляет запомненный ключ, включение возможно, пока ключ открыт.
+  setRemember(remember: boolean): Promise<'ok' | 'needs-password' | 'unsupported'>
   // Отправить всё местное заново одним снимком
   resend(): Promise<void>
   // Включается при открытии приложения
@@ -393,6 +395,23 @@ export function createController(deps: ControllerDeps): Controller {
       await deps.forgetSyncState()
       await finish(created.key, created.meta.salt, file.id, remember)
       await syncNow()
+    },
+
+    async setRemember(remember) {
+      const config = await deps.config.load()
+      if (!config.enabled) return 'ok'
+      if (!remember) {
+        await deps.config.saveKey(null)
+        await deps.config.save({ ...config, remember: false })
+        set({ remember: false })
+        return 'ok'
+      }
+      const current = key ?? (await deps.config.loadKey())
+      if (!current) return 'needs-password'
+      if (!(await deps.config.saveKey(current))) return 'unsupported'
+      await deps.config.save({ ...config, remember: true })
+      set({ remember: true })
+      return 'ok'
     },
 
     async resend() {

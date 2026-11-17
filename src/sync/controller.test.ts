@@ -477,6 +477,65 @@ describe('хранилище пересоздано, потеряно, заме�
   })
 })
 
+describe('запоминание пароля на устройстве', () => {
+  it('выключение удаляет ключ, после перезапуска нужен пароль', async () => {
+    const remote = new MemoryRemote()
+    const r = rig(remote, 'a')
+    r.local.addNote('n1', 'раз')
+    await connect(r)
+    expect(r.config.key).not.toBeNull()
+    expect(await r.controller.setRemember(false)).toBe('ok')
+    expect(r.config.key).toBeNull()
+    expect(r.config.config.remember).toBe(false)
+    expect(r.controller.getState().remember).toBe(false)
+    // в этом сеансе синхронизация продолжает работать
+    r.local.editNote('n1', { text: 'правка' })
+    await r.controller.syncNow()
+    expect(status(r)).toBe('idle')
+    const again = rig(remote, 'a', { config: r.config, local: r.local, auth: r.auth })
+    await again.controller.start()
+    expect(status(again)).toBe('password')
+  })
+
+  it('включение снова запоминает ключ, пока он открыт', async () => {
+    const remote = new MemoryRemote()
+    const r = rig(remote, 'a')
+    await connect(r, 'общий пароль', false)
+    expect(r.config.key).toBeNull()
+    expect(await r.controller.setRemember(true)).toBe('ok')
+    expect(r.config.key).not.toBeNull()
+    expect(r.config.config.remember).toBe(true)
+    const again = rig(remote, 'a', { config: r.config, local: r.local, auth: r.auth })
+    await again.controller.start()
+    expect(status(again)).toBe('idle')
+  })
+
+  it('браузер отказал: сообщаем и ничего не меняем', async () => {
+    const remote = new MemoryRemote()
+    const r = rig(remote, 'a')
+    await connect(r, 'общий пароль', false)
+    r.config.keyAllowed = false
+    expect(await r.controller.setRemember(true)).toBe('unsupported')
+    expect(r.config.config.remember).toBe(false)
+    expect(r.config.key).toBeNull()
+  })
+
+  it('ключа нет (после перезапуска без запоминания): нужен пароль', async () => {
+    const remote = new MemoryRemote()
+    const a = rig(remote, 'a')
+    await connect(a, 'общий пароль', false)
+    const again = rig(remote, 'a', { config: a.config, local: a.local, auth: a.auth })
+    await again.controller.start()
+    expect(await again.controller.setRemember(true)).toBe('needs-password')
+  })
+
+  it('без подключения ничего не делает', async () => {
+    const r = rig(new MemoryRemote(), 'a')
+    expect(await r.controller.setRemember(true)).toBe('ok')
+    expect(r.config.config).toEqual(defaultConfig())
+  })
+})
+
 describe('когда запускать', () => {
   it('при открытии приложения запускается круг, если синхронизация включена', async () => {
     const remote = new MemoryRemote()
