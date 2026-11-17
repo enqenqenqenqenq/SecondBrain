@@ -24,6 +24,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - name: Проверки (линтер, формат, тесты, типы)
+        run: npm run check
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:

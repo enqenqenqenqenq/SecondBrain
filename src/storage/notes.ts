@@ -70,6 +70,8 @@ export async function updateNote(id: string, patch: NotePatch): Promise<Note | u
   const text = patch.text === undefined ? undefined : cleanText(patch.text)
   const existing = await getNote(id)
   if (!existing) return undefined
+  // Пустое изменение не считается правкой: лишний номер правки только засорил бы синхронизацию
+  if (Object.values(patch).every((value) => value === undefined)) return existing
   return touch(id, () => ({
     ...(text !== undefined && { text }),
     ...(patch.event !== undefined && { event: patch.event, timeIsAuto: false }),
