@@ -1,3 +1,4 @@
+import { liveQuery } from 'dexie'
 import { db, getDeviceId } from './db'
 import { eventAt } from './time'
 import type { ListOptions, Note, NotePatch } from './types'
@@ -91,4 +92,13 @@ export async function restoreNote(id: string): Promise<boolean> {
   if (!current || current.deletedAt === null) return false
   await touch(id, () => ({ deletedAt: null }))
   return true
+}
+
+// Следит за записями: сообщает полный список сразу и после каждого изменения, в том числе из другой вкладки
+export function watchNotes(
+  onChange: (notes: Note[]) => void,
+  onError?: (error: unknown) => void,
+): () => void {
+  const subscription = liveQuery(() => listNotes()).subscribe({ next: onChange, error: onError })
+  return () => subscription.unsubscribe()
 }

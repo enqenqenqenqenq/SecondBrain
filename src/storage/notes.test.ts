@@ -8,6 +8,7 @@ import {
   listNotes,
   restoreNote,
   updateNote,
+  watchNotes,
 } from './index'
 import type { EventTime } from './types'
 
@@ -217,5 +218,29 @@ describe('устройство и сохранность', () => {
     await db.open()
     expect((await getNote(note.id))?.text).toBe('переживёт перезапуск')
     expect(await countNotes()).toBe(1)
+  })
+})
+
+describe('наблюдение', () => {
+  it('сообщает список сразу и после каждого изменения', async () => {
+    const seen: string[][] = []
+    const stop = watchNotes((notes) => seen.push(notes.map((n) => n.text)))
+    await vi.waitFor(() => expect(seen.at(-1)).toEqual([]))
+    const note = await createNote('первая')
+    await vi.waitFor(() => expect(seen.at(-1)).toEqual(['первая']))
+    await deleteNote(note.id)
+    await vi.waitFor(() => expect(seen.at(-1)).toEqual([]))
+    stop()
+  })
+
+  it('после остановки больше не сообщает', async () => {
+    let calls = 0
+    const stop = watchNotes(() => calls++)
+    await vi.waitFor(() => expect(calls).toBeGreaterThan(0))
+    stop()
+    const before = calls
+    await createNote('после остановки')
+    await new Promise((r) => setTimeout(r, 50))
+    expect(calls).toBe(before)
   })
 })

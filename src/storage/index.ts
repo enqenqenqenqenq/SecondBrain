@@ -7,6 +7,7 @@ export {
   updateNote,
   deleteNote,
   restoreNote,
+  watchNotes,
 } from './notes'
 export { eventAt, formatMinute, describeEvent } from './time'
 export type { Note, NotePatch, EventTime, Precision, ListOptions } from './types'

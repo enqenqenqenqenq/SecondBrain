@@ -6,7 +6,7 @@
   min-height: 100dvh;
   max-width: 640px;
   margin: 0 auto;
-  padding: 16px;
+  padding: 16px 16px 96px;
 }
 
 .quick h1 {
@@ -87,42 +87,6 @@
   background: none;
   border: none;
   cursor: pointer;
-}
-
-.recent {
-  margin-top: 8px;
-}
-
-.recent ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recent li {
-  padding: 12px 0;
-  border-top: 1px solid var(--border);
-}
-
-.note-text {
-  display: -webkit-box;
-  -webkit-line-clamp: 4;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-  color: var(--text-h);
-}
-
-.note-when {
-  margin-top: 2px;
-  font-size: 13px;
-  color: var(--text);
-}
-
-.empty {
-  margin: 0;
-  color: var(--text);
 }
 
 .sr-only {
