@@ -36,6 +36,8 @@ export {
   watchCardStats,
 } from './links'
 export type { CardOfNote, CardFeedEntry, CardStats } from './links'
+export { listConflictCopies, watchConflictCopies, resolveConflict } from './conflicts'
+export type { ConflictChoice } from './conflicts'
 export { completeNote } from './complete'
 export type { CompleteInput, CompleteLink, CompleteResult } from './complete'
 export {

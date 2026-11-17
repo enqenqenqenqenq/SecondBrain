@@ -625,3 +625,61 @@ describe('загрузка связей', () => {
     expect(await db.links.count()).toBe(0)
   })
 })
+
+describe('версии и копии при конфликте в файле', () => {
+  it('версии и ссылка на оригинал читаются и возвращаются', () => {
+    const data = parseOk(
+      file({
+        notes: [noteRaw({ clock: { a: 2, b: 1 }, conflictOf: 'orig' })],
+        cards: [cardRaw({ clock: { a: 1 } })],
+        links: [linkRaw({ clock: { a: 1 } })],
+      }),
+    )
+    expect(data.notes[0].clock).toEqual({ a: 2, b: 1 })
+    expect(data.notes[0].conflictOf).toBe('orig')
+    expect(data.cards[0].clock).toEqual({ a: 1 })
+    expect(data.links[0].clock).toEqual({ a: 1 })
+  })
+
+  it('у старой копии без версий они не появляются', () => {
+    const data = parseOk(file({ notes: [noteRaw()] }))
+    expect('clock' in data.notes[0]).toBe(false)
+    expect('conflictOf' in data.notes[0]).toBe(false)
+  })
+
+  it('испорченные версии и ссылка делают объект повреждённым', () => {
+    const data = parseOk(
+      file({
+        notes: [
+          noteRaw({ id: 'a', clock: { a: 0 } }),
+          noteRaw({ id: 'b', clock: [1] }),
+          noteRaw({ id: 'c', clock: 'x' }),
+          noteRaw({ id: 'd', conflictOf: 5 }),
+          noteRaw({ id: 'e', conflictOf: '' }),
+          noteRaw({ id: 'ok', clock: { a: 1 }, conflictOf: null }),
+        ],
+        cards: [cardRaw({ clock: { a: -1 } })],
+        links: [linkRaw({ clock: { a: 1.5 } })],
+      }),
+    )
+    expect(data.notes.map((n) => n.id)).toEqual(['ok'])
+    expect(data.cards).toEqual([])
+    expect(data.links).toEqual([])
+    expect(data.invalid).toBe(7)
+  })
+
+  it('копия при конфликте проходит копию данных и загрузку без потерь', async () => {
+    const note = await createNote('основная')
+    await db.notes.put({
+      ...(await db.notes.get(note.id))!,
+      conflictOf: 'другая-запись',
+      clock: { conflict: 1, dev: 2 },
+    })
+    const before = await exportData(new Date(2026, 0, 1))
+    const raw = serializeExport(before)
+    await wipe()
+    await importData(parseOk(raw), { commit: true })
+    expect(await exportData(new Date(2026, 0, 1))).toEqual(before)
+    expect((await db.notes.get(note.id))?.conflictOf).toBe('другая-запись')
+  })
+})

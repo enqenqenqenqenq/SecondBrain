@@ -1,3 +1,4 @@
+import { bumpClock } from './clock'
 import { db, getDeviceId } from './db'
 import { buildCard } from './cards'
 import { isValidEvent } from './fuzzyTime'
@@ -79,7 +80,14 @@ export async function completeNote(noteId: string, input: CompleteInput): Promis
     const touched: Link[] = []
     for (const link of current) {
       if (!wanted.has(link.cardId)) {
-        touched.push({ ...link, deletedAt: now, updatedAt: now, rev: link.rev + 1, deviceId })
+        touched.push({
+          ...link,
+          deletedAt: now,
+          updatedAt: now,
+          rev: link.rev + 1,
+          clock: bumpClock(link.clock, deviceId),
+          deviceId,
+        })
       }
     }
     const stored = await db.links.bulkGet([...linkIds.values()])
@@ -98,6 +106,7 @@ export async function completeNote(noteId: string, input: CompleteInput): Promis
           createdAt: now + order++,
           updatedAt: now,
           rev: 1,
+          clock: bumpClock(undefined, deviceId),
           deviceId,
           deletedAt: null,
         })
@@ -112,6 +121,7 @@ export async function completeNote(noteId: string, input: CompleteInput): Promis
         deletedAt: null,
         updatedAt: now,
         rev: link.rev + 1,
+        clock: bumpClock(link.clock, deviceId),
         deviceId,
       })
     })
@@ -127,6 +137,7 @@ export async function completeNote(noteId: string, input: CompleteInput): Promis
         ...(eventChanged && { event: input.event, timeIsAuto: false }),
         updatedAt: now,
         rev: note.rev + 1,
+        clock: bumpClock(note.clock, deviceId),
         deviceId,
       }
       await db.notes.put(result)

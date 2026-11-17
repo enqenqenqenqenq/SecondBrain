@@ -8,15 +8,20 @@ import {
   completeNote,
   describeEvent,
   eventAt,
+  resolveConflict,
   updateNote,
   watchCardsOfNote,
+  watchConflictCopies,
   watchNote,
 } from './storage'
-import type { CardOfNote, EventTime, Note } from './storage'
+import type { CardOfNote, ConflictChoice, EventTime, Note } from './storage'
 import TimeSheet from './TimeSheet'
 import { useCards } from './useCards'
 import { useNow } from './useNow'
 import './NoteCard.css'
+
+// Начало текста для сравнения версий
+const snippet = (text: string) => (text.length > 160 ? `${text.slice(0, 160)}…` : text)
 
 // Назад в то место, откуда пришли, а если пришли по прямой ссылке, то в ленту
 function goBack(e: MouseEvent<HTMLAnchorElement>) {
@@ -35,12 +40,21 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
   const [timeOpen, setTimeOpen] = useState(false)
   const [linked, setLinked] = useState<CardOfNote[]>([])
   const [mentions, setMentions] = useState<Picked[]>([])
+  // Если запись это копия при конфликте, здесь запись, из которой она получилась. И копии этой записи.
+  const [original, setOriginal] = useState<Note | undefined>(undefined)
+  const [copies, setCopies] = useState<Note[]>([])
   const cards = useCards()
   const dialogRef = useRef<HTMLDialogElement>(null)
   const now = useNow()
 
   useEffect(() => watchNote(id, setNote, () => setNote(undefined)), [id])
   useEffect(() => watchCardsOfNote(id, setLinked), [id])
+  useEffect(() => watchConflictCopies(id, setCopies), [id])
+  const conflictOf = note?.conflictOf ?? null
+  useEffect(() => {
+    if (!conflictOf) return
+    return watchNote(conflictOf, setOriginal)
+  }, [conflictOf])
 
   if (note === null) return null
 
@@ -57,6 +71,16 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
         <p className="empty">Запись не найдена</p>
       </main>
     )
+  }
+
+  async function resolve(choice: ConflictChoice) {
+    try {
+      const { keptId } = await resolveConflict(id, choice)
+      // Если эта копия убрана, переходим на оставшуюся запись
+      if (keptId !== id) window.location.hash = `#/note/${encodeURIComponent(keptId)}`
+    } catch {
+      setError(true)
+    }
   }
 
   function startEdit(current: Note) {
@@ -143,6 +167,48 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
     <main className="card">
       {back}
       <h1>Запись</h1>
+      {note.conflictOf && (
+        <section className="conflict" aria-labelledby="conflict-title">
+          <h2 id="conflict-title">Копия при конфликте</h2>
+          <p>Запись изменили на двух устройствах. Это одна из версий, ничего не потеряно.</p>
+          {original && (
+            <>
+              <p className="conflict-label">Другая версия:</p>
+              <a className="conflict-quote" href={`#/note/${encodeURIComponent(original.id)}`}>
+                {snippet(original.text)}
+              </a>
+            </>
+          )}
+          <div className="conflict-actions">
+            <button type="button" onClick={() => void resolve('copy')}>
+              Оставить эту
+            </button>
+            {original && (
+              <button type="button" onClick={() => void resolve('original')}>
+                Оставить другую
+              </button>
+            )}
+            <button type="button" onClick={() => void resolve('both')}>
+              Оставить обе
+            </button>
+          </div>
+        </section>
+      )}
+      {copies.length > 0 && (
+        <section className="conflict" aria-labelledby="copies-title">
+          <h2 id="copies-title">Есть копия при конфликте</h2>
+          <p>Запись изменили на двух устройствах. Другая версия сохранена отдельно.</p>
+          {copies.map((copy) => (
+            <a
+              key={copy.id}
+              className="conflict-quote"
+              href={`#/note/${encodeURIComponent(copy.id)}`}
+            >
+              {snippet(copy.text)}
+            </a>
+          ))}
+        </section>
+      )}
       <p className="card-text">
         {splitMentions(
           note.text,

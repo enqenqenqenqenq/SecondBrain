@@ -1,4 +1,5 @@
 import { liveQuery } from 'dexie'
+import { bumpClock } from './clock'
 import { db, getDeviceId } from './db'
 import { isValidEvent } from './fuzzyTime'
 import { eventAt } from './time'
@@ -14,6 +15,7 @@ export async function createNote(text: string, event?: Note['event']): Promise<N
   const value = cleanText(text)
   if (event && !isValidEvent(event)) throw new Error('Некорректное время события')
   const now = Date.now()
+  const deviceId = await getDeviceId()
   const note: Note = {
     id: crypto.randomUUID(),
     text: value,
@@ -24,7 +26,8 @@ export async function createNote(text: string, event?: Note['event']): Promise<N
     createdAt: now,
     updatedAt: now,
     rev: 1,
-    deviceId: await getDeviceId(),
+    clock: bumpClock(undefined, deviceId),
+    deviceId,
     deletedAt: null,
   }
   await db.notes.add(note)
@@ -64,6 +67,7 @@ async function touch(id: string, change: (n: Note) => Partial<Note>): Promise<No
       ...change(current),
       updatedAt: Date.now(),
       rev: current.rev + 1,
+      clock: bumpClock(current.clock, deviceId),
       deviceId,
     }
     await db.notes.put(next)
@@ -83,6 +87,7 @@ export async function updateNote(id: string, patch: NotePatch): Promise<Note | u
     ...(patch.event !== undefined && { event: patch.event, timeIsAuto: false }),
     ...(patch.tagIds !== undefined && { tagIds: patch.tagIds }),
     ...(patch.reviewedAt !== undefined && { reviewedAt: patch.reviewedAt }),
+    ...(patch.conflictOf !== undefined && { conflictOf: patch.conflictOf }),
   }))
 }
 

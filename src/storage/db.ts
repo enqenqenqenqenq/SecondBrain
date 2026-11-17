@@ -24,6 +24,11 @@ db.version(2).stores({
   links: 'id, [ownerType+ownerId], cardId, updatedAt',
 })
 
+// Версия 3: индекс по conflictOf, чтобы быстро находить копии записи при конфликте. Данные не меняются.
+db.version(3).stores({
+  notes: 'id, createdAt, updatedAt, reviewedAt, [event.from+createdAt], *tagIds, conflictOf',
+})
+
 // Идентификатор этого устройства. Создаётся один раз и хранится только здесь.
 export function getDeviceId(): Promise<string> {
   return db.transaction('rw', db.settings, async () => {

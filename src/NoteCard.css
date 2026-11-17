@@ -193,3 +193,61 @@
   border: none;
   cursor: pointer;
 }
+
+.conflict {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+}
+
+.conflict h2 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--text-h);
+}
+
+.conflict p {
+  margin: 0 0 8px;
+  font-size: 13px;
+}
+
+.conflict-label {
+  margin: 4px 0 2px;
+  font-weight: 700;
+}
+
+.conflict-quote {
+  display: block;
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 14px;
+  color: var(--text-h);
+  text-decoration: none;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.conflict-actions button {
+  height: 36px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+  background: none;
+  border: 1.5px solid var(--accent);
+  border-radius: 18px;
+}

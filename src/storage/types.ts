@@ -1,3 +1,5 @@
+import type { Clock } from './clock'
+
 export type Precision = 'minute' | 'day' | 'month' | 'season' | 'year' | 'range'
 
 // Время события: период от from до to, строки вида 2024-06-01T00:00
@@ -17,8 +19,10 @@ export interface Note {
   createdAt: number
   updatedAt: number
   rev: number
+  clock?: Clock // версии для разбора конфликтов, у старых записей нет
   deviceId: string
   deletedAt: number | null
+  conflictOf?: string | null // id записи, копией которой эта запись стала при конфликте
 }
 
 export interface NotePatch {
@@ -26,6 +30,7 @@ export interface NotePatch {
   event?: EventTime
   tagIds?: string[]
   reviewedAt?: number | null
+  conflictOf?: string | null
 }
 
 export type CardKind = 'person' | 'place'
@@ -57,6 +62,7 @@ export interface Card {
   createdAt: number
   updatedAt: number
   rev: number
+  clock?: Clock
   deviceId: string
   deletedAt: number | null
 }
@@ -93,6 +99,7 @@ export interface Link {
   createdAt: number
   updatedAt: number
   rev: number
+  clock?: Clock
   deviceId: string
   deletedAt: number | null
 }

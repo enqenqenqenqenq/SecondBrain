@@ -1,4 +1,5 @@
 import { liveQuery } from 'dexie'
+import { bumpClock } from './clock'
 import { db, getDeviceId } from './db'
 import { idFromKey } from './ids'
 import type { Card, EventTime, Link, LinkRole, ListOptions, Note } from './types'
@@ -41,6 +42,7 @@ export async function linkNote(
         createdAt: now,
         updatedAt: now,
         rev: 1,
+        clock: bumpClock(undefined, deviceId),
         deviceId,
         deletedAt: null,
       }
@@ -56,6 +58,7 @@ export async function linkNote(
       deletedAt: null,
       updatedAt: now,
       rev: existing.rev + 1,
+      clock: bumpClock(existing.clock, deviceId),
       deviceId,
     }
     await db.links.put(link)
@@ -76,6 +79,7 @@ export async function unlinkNote(noteId: string, cardId: string): Promise<boolea
       deletedAt: at,
       updatedAt: at,
       rev: existing.rev + 1,
+      clock: bumpClock(existing.clock, deviceId),
       deviceId,
     })
     return true

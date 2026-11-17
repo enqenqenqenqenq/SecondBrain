@@ -76,6 +76,7 @@ export default function NoteList({
             <span className={isApproximate(note) ? 'when approx' : 'when'}>
               {describeEvent(note.event, now)}
             </span>
+            {note.conflictOf && <span className="role">копия при конфликте</span>}
             {roles?.get(note.id) && (
               <span className="role">
                 {roles.get(note.id) === 'with' ? 'был со мной' : 'упомянут'}

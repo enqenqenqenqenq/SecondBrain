@@ -1,4 +1,5 @@
 import { liveQuery } from 'dexie'
+import { bumpClock } from './clock'
 import { db, getDeviceId } from './db'
 import type { Birthday, Card, CardKind, CardPatch, Fact, NewCard } from './types'
 
@@ -86,6 +87,7 @@ export function buildCard(input: NewCard, deviceId: string, now: number): Card {
     createdAt: now,
     updatedAt: now,
     rev: 1,
+    clock: bumpClock(undefined, deviceId),
     deviceId,
     deletedAt: null,
   }
@@ -136,6 +138,7 @@ export async function updateCard(id: string, patch: CardPatch): Promise<Card | u
       ...changes,
       updatedAt: Date.now(),
       rev: current.rev + 1,
+      clock: bumpClock(current.clock, deviceId),
       deviceId,
     }
     await db.cards.put(next)
@@ -151,14 +154,28 @@ export async function deleteCard(id: string): Promise<boolean> {
     const current = await db.cards.get(id)
     if (!current || current.deletedAt !== null) return false
     const at = Date.now()
-    await db.cards.put({ ...current, deletedAt: at, updatedAt: at, rev: current.rev + 1, deviceId })
+    await db.cards.put({
+      ...current,
+      deletedAt: at,
+      updatedAt: at,
+      rev: current.rev + 1,
+      clock: bumpClock(current.clock, deviceId),
+      deviceId,
+    })
     const links = await db.links
       .where('cardId')
       .equals(id)
       .filter((l) => l.deletedAt === null)
       .toArray()
     await db.links.bulkPut(
-      links.map((l) => ({ ...l, deletedAt: at, updatedAt: at, rev: l.rev + 1, deviceId })),
+      links.map((l) => ({
+        ...l,
+        deletedAt: at,
+        updatedAt: at,
+        rev: l.rev + 1,
+        clock: bumpClock(l.clock, deviceId),
+        deviceId,
+      })),
     )
     return true
   })
@@ -174,14 +191,28 @@ export async function restoreCard(id: string): Promise<boolean> {
     if (!card || card.deletedAt === null) return false
     const removedAt = card.deletedAt
     const at = Date.now()
-    await db.cards.put({ ...card, deletedAt: null, updatedAt: at, rev: card.rev + 1, deviceId })
+    await db.cards.put({
+      ...card,
+      deletedAt: null,
+      updatedAt: at,
+      rev: card.rev + 1,
+      clock: bumpClock(card.clock, deviceId),
+      deviceId,
+    })
     const links = await db.links
       .where('cardId')
       .equals(id)
       .filter((l) => l.deletedAt === removedAt)
       .toArray()
     await db.links.bulkPut(
-      links.map((l) => ({ ...l, deletedAt: null, updatedAt: at, rev: l.rev + 1, deviceId })),
+      links.map((l) => ({
+        ...l,
+        deletedAt: null,
+        updatedAt: at,
+        rev: l.rev + 1,
+        clock: bumpClock(l.clock, deviceId),
+        deviceId,
+      })),
     )
     return true
   })

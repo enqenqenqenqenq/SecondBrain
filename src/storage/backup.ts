@@ -1,3 +1,4 @@
+import { isValidClock } from './clock'
 import { db } from './db'
 import { isValidBirthday } from './cards'
 import { isValidEvent } from './fuzzyTime'
@@ -148,7 +149,17 @@ function common(o: Raw) {
   if (!isId(id) || !isNum(createdAt) || !isNum(updatedAt)) return null
   if (typeof rev !== 'number' || !Number.isInteger(rev) || rev < 1) return null
   if (!isId(deviceId) || deletedAt !== null) return null
-  return { id, createdAt, updatedAt, rev, deviceId, deletedAt: null }
+  // Версии для разбора конфликтов: нет у старых копий, а испорченные делают объект повреждённым
+  if (o.clock !== undefined && !isValidClock(o.clock)) return null
+  return {
+    id,
+    createdAt,
+    updatedAt,
+    rev,
+    deviceId,
+    deletedAt: null,
+    ...(o.clock !== undefined && { clock: o.clock }),
+  }
 }
 
 function toNote(o: Raw): Note | null {
@@ -157,6 +168,7 @@ function toNote(o: Raw): Note | null {
   if (!isValidEvent(o.event as never) || typeof o.timeIsAuto !== 'boolean') return null
   if (o.reviewedAt !== null && !isNum(o.reviewedAt)) return null
   if (!isStrList(o.tagIds)) return null
+  if (o.conflictOf !== undefined && o.conflictOf !== null && !isId(o.conflictOf)) return null
   const e = o.event as Note['event']
   return {
     ...base,
@@ -165,6 +177,7 @@ function toNote(o: Raw): Note | null {
     timeIsAuto: o.timeIsAuto,
     reviewedAt: o.reviewedAt as number | null,
     tagIds: o.tagIds,
+    ...(typeof o.conflictOf === 'string' && { conflictOf: o.conflictOf }),
   }
 }
 
