@@ -1,7 +1,7 @@
 import { liveQuery } from 'dexie'
 import { db, getDeviceId } from './db'
 import { idFromKey } from './ids'
-import type { Card, Link, LinkRole, ListOptions, Note } from './types'
+import type { Card, EventTime, Link, LinkRole, ListOptions, Note } from './types'
 
 export interface CardOfNote {
   card: Card
@@ -96,26 +96,40 @@ export async function listCardsOfNote(noteId: string): Promise<CardOfNote[]> {
   return result
 }
 
-// Записи карточки в порядке ленты: от новых к старым по времени события, при равенстве по времени сохранения
-export async function listNotesOfCard(
-  cardId: string,
-  { limit, offset }: ListOptions = {},
-): Promise<Note[]> {
+export interface CardFeedEntry {
+  note: Note
+  role: LinkRole | null
+}
+
+// Лента карточки: все живые записи, связанные с ней, в порядке общей ленты (от новых к старым по времени
+// события, при равенстве по времени сохранения). Роль берётся из связи.
+export async function listCardFeed(cardId: string): Promise<CardFeedEntry[]> {
   const links = await db.links
     .where('cardId')
     .equals(cardId)
     .filter((l) => l.deletedAt === null && l.ownerType === 'note')
     .toArray()
   const found = await db.notes.bulkGet(links.map((l) => l.ownerId))
-  const notes = found
-    .filter((n): n is Note => n !== undefined && n.deletedAt === null)
-    .sort((a, b) =>
-      a.event.from === b.event.from
-        ? b.createdAt - a.createdAt
-        : a.event.from < b.event.from
-          ? 1
-          : -1,
-    )
+  const entries: CardFeedEntry[] = []
+  links.forEach((link, i) => {
+    const note = found[i]
+    if (note && note.deletedAt === null) entries.push({ note, role: link.role })
+  })
+  return entries.sort((a, b) =>
+    a.note.event.from === b.note.event.from
+      ? b.note.createdAt - a.note.createdAt
+      : a.note.event.from < b.note.event.from
+        ? 1
+        : -1,
+  )
+}
+
+// Записи карточки в порядке ленты
+export async function listNotesOfCard(
+  cardId: string,
+  { limit, offset }: ListOptions = {},
+): Promise<Note[]> {
+  const notes = (await listCardFeed(cardId)).map((e) => e.note)
   const start = offset ?? 0
   return notes.slice(start, limit === undefined ? undefined : start + limit)
 }
@@ -133,6 +147,60 @@ export function watchCardsOfNote(
     next: onChange,
     error: onError,
   })
+  return () => subscription.unsubscribe()
+}
+
+export function watchCardFeed(
+  cardId: string,
+  onChange: (feed: CardFeedEntry[]) => void,
+  onError?: (error: unknown) => void,
+): () => void {
+  const subscription = liveQuery(() => listCardFeed(cardId)).subscribe({
+    next: onChange,
+    error: onError,
+  })
+  return () => subscription.unsubscribe()
+}
+
+export interface CardStats {
+  count: number // сколько живых записей связано с карточкой
+  last: EventTime | null // время самой свежей из них
+}
+
+// Сколько записей у каждой карточки и когда была последняя. Для списка досье.
+export async function cardStats(): Promise<Map<string, CardStats>> {
+  const links = await db.links
+    .filter((l) => l.deletedAt === null && l.ownerType === 'note')
+    .toArray()
+  const ids = [...new Set(links.map((l) => l.ownerId))]
+  const notes = new Map<string, Note>()
+  ;(await db.notes.bulkGet(ids)).forEach((n) => {
+    if (n && n.deletedAt === null) notes.set(n.id, n)
+  })
+  const newer = (a: Note, b: Note) =>
+    a.event.from === b.event.from ? a.createdAt > b.createdAt : a.event.from > b.event.from
+  const best = new Map<string, Note>()
+  const stats = new Map<string, CardStats>()
+  for (const link of links) {
+    const note = notes.get(link.ownerId)
+    if (!note) continue
+    const entry = stats.get(link.cardId) ?? { count: 0, last: null }
+    entry.count++
+    const current = best.get(link.cardId)
+    if (!current || newer(note, current)) {
+      best.set(link.cardId, note)
+      entry.last = note.event
+    }
+    stats.set(link.cardId, entry)
+  }
+  return stats
+}
+
+export function watchCardStats(
+  onChange: (stats: Map<string, CardStats>) => void,
+  onError?: (error: unknown) => void,
+): () => void {
+  const subscription = liveQuery(() => cardStats()).subscribe({ next: onChange, error: onError })
   return () => subscription.unsubscribe()
 }
 

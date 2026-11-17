@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react'
 import BottomNav from './BottomNav'
+import CardPage from './CardPage'
 import Complete from './Complete'
+import DossierList from './DossierList'
 import Dev from './Dev'
 import Feed from './Feed'
 import NoteCard from './NoteCard'
@@ -43,6 +45,8 @@ export default function App() {
       {route.name === 'complete' && <Complete id={route.id} />}
       {route.name === 'entry' && <QuickEntry />}
       {route.name === 'settings' && <Settings />}
+      {route.name === 'dossier' && <DossierList />}
+      {route.name === 'card' && <CardPage id={route.id} />}
       {import.meta.env.DEV && route.name === 'dev' && <Dev />}
       <Toast toast={toast} onUndo={(id) => void undoRemove(id)} onClose={closeToast} />
       <BottomNav route={route} />

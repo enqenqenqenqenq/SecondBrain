@@ -1,20 +1,58 @@
 import { useDeferredValue, useMemo, useState } from 'react'
+import CardFilterSheet from './CardFilterSheet'
 import { filterNotes } from './feedFilters'
 import NoteList from './NoteList'
 import { foldedFor, parseQuery } from './search'
 import { describeEvent, isUnreviewed, yearEvent } from './storage'
-import type { EventTime } from './storage'
+import type { Card, EventTime } from './storage'
 import TimeSheet from './TimeSheet'
+import { useCardFeed, useCards } from './useCards'
 import { useNotes } from './useNotes'
 import { useNow } from './useNow'
 import './Feed.css'
 
 // Поиск и фильтры помнятся, пока приложение открыто: после карточки записи лента возвращается
 // к тому же виду
-const saved: { query: string; unreviewed: boolean; period: EventTime | null } = {
+const saved: {
+  query: string
+  unreviewed: boolean
+  period: EventTime | null
+  personId: string | null
+  placeId: string | null
+} = {
   query: '',
   unreviewed: false,
   period: null,
+  personId: null,
+  placeId: null,
+}
+
+// Кнопка фильтра с крестиком сброса
+function Filter({
+  label,
+  active,
+  onOpen,
+  onClear,
+  clearLabel,
+}: {
+  label: string
+  active: boolean
+  onOpen: () => void
+  onClear: () => void
+  clearLabel: string
+}) {
+  return (
+    <span className="filter-group">
+      <button type="button" className="filter" aria-pressed={active} onClick={onOpen}>
+        {label}
+      </button>
+      {active && (
+        <button type="button" className="filter-clear" aria-label={clearLabel} onClick={onClear}>
+          ×
+        </button>
+      )}
+    </span>
+  )
 }
 
 export default function Feed() {
@@ -24,15 +62,42 @@ export default function Feed() {
   const [unreviewed, setUnreviewed] = useState(saved.unreviewed)
   const [period, setPeriod] = useState(saved.period)
   const [periodOpen, setPeriodOpen] = useState(false)
+  const [chosenPerson, setPersonId] = useState(saved.personId)
+  const [chosenPlace, setPlaceId] = useState(saved.placeId)
+  const [chooser, setChooser] = useState<'person' | 'place' | null>(null)
+  const cards = useCards()
+  // Если выбранную карточку удалили, фильтр по ней не действует
+  const exists = (id: string | null) =>
+    id && cards?.some((c) => c.id === id) !== false ? id : null
+  const personId = exists(chosenPerson)
+  const placeId = exists(chosenPlace)
+  const personFeed = useCardFeed(personId)
+  const placeFeed = useCardFeed(placeId)
   // Поле реагирует сразу, а список пересчитывается без задержки ввода
   const deferred = useDeferredValue(query)
   const words = useMemo(() => parseQuery(deferred), [deferred])
 
   const unreviewedTotal = useMemo(() => notes?.filter(isUnreviewed).length ?? 0, [notes])
-  const filters = useMemo(() => ({ words, unreviewed, period }), [words, unreviewed, period])
+  // Записи выбранных людей и мест. Пока они читаются, список не показываем, чтобы он не мигал неотфильтрованным.
+  const linkedReady =
+    (personId === null || personFeed !== null) && (placeId === null || placeFeed !== null)
+  const linked = useMemo(
+    () =>
+      [personFeed, placeFeed]
+        .filter((feed) => feed !== null)
+        .map((feed) => new Set(feed.map((e) => e.note.id))),
+    [personFeed, placeFeed],
+  )
+  const filters = useMemo(
+    () => ({ words, unreviewed, period, linked }),
+    [words, unreviewed, period, linked],
+  )
   const shown = useMemo(
-    () => (notes ? filterNotes(notes, filters, (n) => foldedFor(n.id, n.rev, n.text)) : null),
-    [notes, filters],
+    () =>
+      notes && linkedReady
+        ? filterNotes(notes, filters, (n) => foldedFor(n.id, n.rev, n.text))
+        : null,
+    [notes, filters, linkedReady],
   )
 
   function changeQuery(value: string) {
@@ -47,9 +112,20 @@ export default function Feed() {
     saved.period = value
     setPeriod(value)
   }
+  function changePerson(value: string | null) {
+    saved.personId = value
+    setPersonId(value)
+  }
+  function changePlace(value: string | null) {
+    saved.placeId = value
+    setPlaceId(value)
+  }
+  const nameOf = (id: string | null, fallback: string) =>
+    (id && cards?.find((c) => c.id === id)?.name) || fallback
 
   const nothingFound = notes && notes.length > 0 && shown?.length === 0
-  const onlyUnreviewed = unreviewed && !period && words.length === 0 && unreviewedTotal === 0
+  const onlyUnreviewed =
+    unreviewed && !period && words.length === 0 && linked.length === 0 && unreviewedTotal === 0
 
   return (
     <main className="feed">
@@ -75,26 +151,27 @@ export default function Feed() {
       {notes && (
         <>
           <div className="filters">
-            <span className="filter-group">
-              <button
-                type="button"
-                className="filter"
-                aria-pressed={period !== null}
-                onClick={() => setPeriodOpen(true)}
-              >
-                {period ? describeEvent(period, now) : 'Период'}
-              </button>
-              {period && (
-                <button
-                  type="button"
-                  className="filter-clear"
-                  aria-label="Сбросить период"
-                  onClick={() => changePeriod(null)}
-                >
-                  ×
-                </button>
-              )}
-            </span>
+            <Filter
+              label={period ? describeEvent(period, now) : 'Период'}
+              active={period !== null}
+              onOpen={() => setPeriodOpen(true)}
+              onClear={() => changePeriod(null)}
+              clearLabel="Сбросить период"
+            />
+            <Filter
+              label={nameOf(personId, 'Человек')}
+              active={personId !== null}
+              onOpen={() => setChooser('person')}
+              onClear={() => changePerson(null)}
+              clearLabel="Сбросить человека"
+            />
+            <Filter
+              label={nameOf(placeId, 'Место')}
+              active={placeId !== null}
+              onOpen={() => setChooser('place')}
+              onClear={() => changePlace(null)}
+              clearLabel="Сбросить место"
+            />
             <button
               type="button"
               className="filter"
@@ -116,6 +193,20 @@ export default function Feed() {
       {notes?.length === 0 && <p className="empty">Пока пусто</p>}
       {nothingFound && (
         <p className="empty">{onlyUnreviewed ? 'Неразобранных нет' : 'Ничего не найдено'}</p>
+      )}
+
+      {chooser && cards && (
+        <CardFilterSheet
+          title={chooser === 'person' ? 'Человек' : 'Место'}
+          cards={cards.filter((c: Card) => c.kind === chooser)}
+          selectedId={chooser === 'person' ? personId : placeId}
+          onSelect={(card) => {
+            if (chooser === 'person') changePerson(card?.id ?? null)
+            else changePlace(card?.id ?? null)
+            setChooser(null)
+          }}
+          onClose={() => setChooser(null)}
+        />
       )}
 
       {periodOpen && (

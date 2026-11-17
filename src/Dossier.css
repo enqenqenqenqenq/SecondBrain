@@ -1,0 +1,189 @@
+.dossier {
+  box-sizing: border-box;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 16px 16px 96px;
+}
+
+.dossier h1 {
+  margin: 8px 0 12px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.segmented {
+  display: flex;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 3px;
+  background: var(--surface);
+  border-radius: 20px;
+}
+
+.segmented button {
+  flex: 1;
+  height: 34px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-radius: 17px;
+}
+
+.segmented button[aria-pressed='true'] {
+  font-weight: 700;
+  color: var(--text-h);
+  background: var(--bg);
+  box-shadow: 0 0 0 1px var(--border);
+}
+
+.dossier-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dossier-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.dossier-row-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.dossier-row-name {
+  overflow-wrap: anywhere;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.dossier-row-sub {
+  font-size: 12px;
+  color: var(--text);
+}
+
+.dossier-row-arrow {
+  font-size: 20px;
+  color: var(--text);
+}
+
+.birthday-chip {
+  padding: 2px 10px;
+  font-size: 11px;
+  white-space: nowrap;
+  color: var(--text-h);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  z-index: 5;
+  width: 52px;
+  height: 52px;
+  font-size: 28px;
+  line-height: 1;
+  color: var(--accent-contrast);
+  cursor: pointer;
+  background: var(--accent);
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 25%);
+}
+
+.new-card-name {
+  margin-top: 12px;
+}
+
+/* Страница карточки */
+.dossier-card .kind {
+  margin: 8px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.dossier-card .dossier-name {
+  margin: 2px 0 4px;
+  overflow-wrap: anywhere;
+  font-size: 24px;
+}
+
+.dossier-card .aliases {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.dossier-card .description {
+  margin: 8px 0;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+  font-size: 15px;
+  color: var(--text-h);
+}
+
+.details {
+  margin: 12px 0 0;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+.details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 14px;
+}
+
+.details > div + div {
+  border-top: 1px solid var(--border);
+}
+
+.details dt {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.dossier-card .field-title {
+  margin: 24px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+}
+
+.count-badge {
+  margin-left: 6px;
+  font-weight: 600;
+  color: var(--text-h);
+}

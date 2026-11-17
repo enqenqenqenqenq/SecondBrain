@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { db } from './db'
 import { idFromKey } from './ids'
 import {
+  cardStats,
   countNotesOfCard,
+  listCardFeed,
   createCard,
   createNote,
   deleteCard,
   deleteNote,
   linkNote,
+  listNotes,
   listCardsOfNote,
   listNotesOfCard,
   restoreNote,
@@ -322,5 +325,112 @@ describe('скорость', () => {
     const elapsed = performance.now() - started
     expect(found).toHaveLength(mine.length)
     expect(elapsed).toBeLessThan(300)
+  })
+})
+
+describe('лента карточки с ролями', () => {
+  it('у записей роль из связи, порядок как в ленте', async () => {
+    const person = await createCard({ kind: 'person', name: 'А' })
+    const a = await createNote('с ним', minute('2026-03-01T10:00'))
+    const b = await createNote('о нём', minute('2026-05-01T10:00'))
+    const c = await createNote('без роли', minute('2025-01-01T10:00'))
+    await linkNote(a.id, person.id, 'with')
+    await linkNote(b.id, person.id, 'mentioned')
+    await linkNote(c.id, person.id)
+    const feed = await listCardFeed(person.id)
+    expect(feed.map((e) => [e.note.text, e.role])).toEqual([
+      ['о нём', 'mentioned'],
+      ['с ним', 'with'],
+      ['без роли', null],
+    ])
+  })
+
+  it('лента совпадает с общей лентой, отфильтрованной по человеку', async () => {
+    const generated = generateNotes(400, { seed: 7, now: new Date(2026, 10, 17, 12, 0) })
+    await db.notes.bulkAdd(generated)
+    const person = await createCard({ kind: 'person', name: 'Человек А' })
+    const mine = new Set<string>()
+    for (const [i, n] of generated.entries()) {
+      if (i % 7 === 0) {
+        await linkNote(n.id, person.id, i % 14 === 0 ? 'with' : 'mentioned')
+        mine.add(n.id)
+      }
+    }
+    // Независимый расчёт: общая лента целиком, оставляем только записи человека
+    const expected = (await listNotes()).filter((n) => mine.has(n.id))
+    const feed = await listCardFeed(person.id)
+    expect(feed).toHaveLength(mine.size)
+    expect(feed.map((e) => `${e.note.event.from}|${e.note.createdAt}`)).toEqual(
+      expected.map((n) => `${n.event.from}|${n.createdAt}`),
+    )
+    expect(new Set(feed.map((e) => e.note.id))).toEqual(mine)
+  })
+
+  it('удалённые записи и снятые связи в ленту не попадают, вернувшаяся запись возвращается', async () => {
+    const person = await createCard({ kind: 'person', name: 'А' })
+    const keep = await createNote('остаётся')
+    const dead = await createNote('удалена')
+    const off = await createNote('связь снята')
+    for (const n of [keep, dead, off]) await linkNote(n.id, person.id)
+    await deleteNote(dead.id)
+    await unlinkNote(off.id, person.id)
+    expect((await listCardFeed(person.id)).map((e) => e.note.text)).toEqual(['остаётся'])
+    await restoreNote(dead.id)
+    expect((await listCardFeed(person.id)).map((e) => e.note.text).sort()).toEqual([
+      'остаётся',
+      'удалена',
+    ])
+  })
+
+  it('записи другого человека и неизвестная карточка', async () => {
+    const a = await createCard({ kind: 'person', name: 'А' })
+    const b = await createCard({ kind: 'person', name: 'Б' })
+    const note = await createNote('раз')
+    await linkNote(note.id, b.id)
+    expect(await listCardFeed(a.id)).toEqual([])
+    expect(await listCardFeed('нет')).toEqual([])
+  })
+})
+
+describe('счётчики карточек', () => {
+  it('число записей и время последней', async () => {
+    const a = await createCard({ kind: 'person', name: 'А' })
+    const b = await createCard({ kind: 'place', name: 'Б' })
+    await createCard({ kind: 'person', name: 'Без записей' })
+    const n1 = await createNote('раз', minute('2024-01-01T10:00'))
+    const n2 = await createNote('два', minute('2026-02-02T10:00'))
+    const n3 = await createNote('три', minute('2025-03-03T10:00'))
+    await linkNote(n1.id, a.id)
+    await linkNote(n2.id, a.id)
+    await linkNote(n3.id, b.id)
+    const stats = await cardStats()
+    expect(stats.get(a.id)).toEqual({ count: 2, last: n2.event })
+    expect(stats.get(b.id)).toEqual({ count: 1, last: n3.event })
+    expect(stats.size).toBe(2)
+  })
+
+  it('удалённые записи и снятые связи не считаются, последняя пересчитывается', async () => {
+    const a = await createCard({ kind: 'person', name: 'А' })
+    const old = await createNote('старая', minute('2020-01-01T10:00'))
+    const fresh = await createNote('свежая', minute('2026-01-01T10:00'))
+    const gone = await createNote('снята', minute('2027-01-01T10:00'))
+    for (const n of [old, fresh, gone]) await linkNote(n.id, a.id)
+    await unlinkNote(gone.id, a.id)
+    await deleteNote(fresh.id)
+    expect((await cardStats()).get(a.id)).toEqual({ count: 1, last: old.event })
+    await deleteNote(old.id)
+    expect((await cardStats()).get(a.id)).toBeUndefined()
+  })
+
+  it('при равном времени события последней считается позже сохранённая', async () => {
+    const a = await createCard({ kind: 'person', name: 'А' })
+    let now = 1_000_000
+    vi.spyOn(Date, 'now').mockImplementation(() => ++now)
+    const first = await createNote('раньше', minute('2026-05-05T10:00'))
+    const second = await createNote('позже', minute('2026-05-05T10:00'))
+    await linkNote(first.id, a.id)
+    await linkNote(second.id, a.id)
+    expect((await cardStats()).get(a.id)?.count).toBe(2)
+    expect((await cardStats()).get(a.id)?.last).toEqual(second.event)
   })
 })

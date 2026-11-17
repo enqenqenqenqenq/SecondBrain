@@ -27,11 +27,15 @@ export {
   unlinkNote,
   listCardsOfNote,
   listNotesOfCard,
+  listCardFeed,
   countNotesOfCard,
+  cardStats,
   watchCardsOfNote,
   watchNotesOfCard,
+  watchCardFeed,
+  watchCardStats,
 } from './links'
-export type { CardOfNote } from './links'
+export type { CardOfNote, CardFeedEntry, CardStats } from './links'
 export { completeNote } from './complete'
 export type { CompleteInput, CompleteLink, CompleteResult } from './complete'
 export {
@@ -44,7 +48,7 @@ export {
   EXPORT_VERSION,
 } from './backup'
 export type { ExportFile, ParsedExport, ParseResult, ImportReport } from './backup'
-export { eventAt, formatMinute, describeEvent } from './time'
+export { eventAt, formatMinute, describeEvent, MONTHS_OF } from './time'
 export {
   minuteEvent,
   dayEvent,

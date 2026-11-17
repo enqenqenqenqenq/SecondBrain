@@ -136,13 +136,15 @@ export default function NoteCard({ id, onDelete }: { id: string; onDelete: (id: 
       {linked.length > 0 && (
         <ul className="link-chips card-links" aria-label="Люди и места">
           {linked.map(({ card, role }) => (
-            <li key={card.id} className="link-chip">
-              <span className="link-chip-name">{card.name}</span>
-              {card.kind === 'person' && role && (
-                <span className="link-chip-role-text">
-                  {role === 'with' ? 'был со мной' : 'упомянут'}
-                </span>
-              )}
+            <li key={card.id}>
+              <a className="link-chip" href={`#/card/${encodeURIComponent(card.id)}`}>
+                <span className="link-chip-name">{card.name}</span>
+                {card.kind === 'person' && role && (
+                  <span className="link-chip-role-text">
+                    {role === 'with' ? 'был со мной' : 'упомянут'}
+                  </span>
+                )}
+              </a>
             </li>
           ))}
         </ul>

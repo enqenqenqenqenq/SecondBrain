@@ -6,12 +6,17 @@ export type Route =
   | { name: 'note'; id: string }
   | { name: 'complete'; id: string }
   | { name: 'settings' }
+  | { name: 'dossier' }
+  | { name: 'card'; id: string }
   | { name: 'dev' }
 
 const read = (): Route => {
   const hash = window.location.hash
   if (hash === '#/feed') return { name: 'feed' }
   if (hash === '#/settings') return { name: 'settings' }
+  if (hash === '#/dossier') return { name: 'dossier' }
+  const card = /^#\/card\/(.+)$/.exec(hash)
+  if (card) return { name: 'card', id: decodeURIComponent(card[1]) }
   // Служебная страница есть только при разработке
   if (hash === '#/dev' && import.meta.env.DEV) return { name: 'dev' }
   const complete = /^#\/complete\/(.+)$/.exec(hash)

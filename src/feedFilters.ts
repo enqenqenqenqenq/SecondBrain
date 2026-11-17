@@ -6,6 +6,8 @@ export interface FeedFilters {
   words: string[] // слова поиска, пусто значит без поиска
   unreviewed: boolean // только неразобранные
   period: EventTime | null // только записи, чьё время пересекается с периодом
+  // Записи выбранных людей и мест: по набору номеров на каждую выбранную карточку. Запись должна быть в каждом.
+  linked: ReadonlySet<string>[]
 }
 
 // Периоды пересекаются, если один начался не позже конца другого и закончился не раньше его начала.
@@ -16,7 +18,12 @@ export function overlaps(a: EventTime, b: EventTime): boolean {
 }
 
 export function hasFilters(filters: FeedFilters): boolean {
-  return filters.words.length > 0 || filters.unreviewed || filters.period !== null
+  return (
+    filters.words.length > 0 ||
+    filters.unreviewed ||
+    filters.period !== null ||
+    filters.linked.length > 0
+  )
 }
 
 // Фильтры работают вместе: запись должна подходить под каждый включённый. Дешёвые проверки идут
@@ -27,11 +34,12 @@ export function filterNotes(
   foldedTextOf: (note: Note) => string,
 ): Note[] {
   if (!hasFilters(filters)) return notes
-  const { words, unreviewed, period } = filters
+  const { words, unreviewed, period, linked } = filters
   return notes.filter(
     (note) =>
       (!unreviewed || isUnreviewed(note)) &&
       (!period || overlaps(note.event, period)) &&
+      linked.every((ids) => ids.has(note.id)) &&
       (words.length === 0 || matches(foldedTextOf(note), words)),
   )
 }

@@ -54,3 +54,14 @@
   background: var(--mark);
   border-radius: 3px;
 }
+
+.role {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 10px;
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+}

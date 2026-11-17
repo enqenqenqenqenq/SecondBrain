@@ -20,7 +20,7 @@ const note = (text: string, event: EventTime, reviewed = false): Note => ({
   deletedAt: null,
 })
 
-const none: FeedFilters = { words: [], unreviewed: false, period: null }
+const none: FeedFilters = { words: [], unreviewed: false, period: null, linked: [] }
 const run = (notes: Note[], filters: Partial<FeedFilters>) =>
   filterNotes(notes, { ...none, ...filters }, (n) => fold(n.text)).map((n) => n.text)
 const words = (query: string) => parseQuery(query)
@@ -191,11 +191,52 @@ describe('скорость', () => {
         i % 3 === 0,
       ),
     )
-    const filters: FeedFilters = { words: words('кофе'), unreviewed: true, period: yearEvent(2022) }
+    const filters: FeedFilters = {
+      words: words('кофе'),
+      unreviewed: true,
+      period: yearEvent(2022),
+      linked: [],
+    }
     const started = performance.now()
     const result = filterNotes(big, filters, (n) => fold(n.text))
     expect(performance.now() - started).toBeLessThan(300)
     expect(result.length).toBeGreaterThan(0)
     expect(result.length).toBeLessThan(big.length)
+  })
+})
+
+describe('люди и места', () => {
+  const notes = [
+    note('кофе с первым', minuteEvent(2024, 7, 15, 8, 30)),
+    note('кофе со вторым', minuteEvent(2024, 7, 16, 8, 30), true),
+    note('чай с обоими', minuteEvent(2024, 1, 10, 9, 0)),
+    note('просто запись', yearEvent(2019)),
+  ]
+  const idOf = (text: string) => notes.find((n) => n.text === text)!.id
+  const first = new Set([idOf('кофе с первым'), idOf('чай с обоими')])
+  const second = new Set([idOf('кофе со вторым'), idOf('чай с обоими')])
+
+  it('одна карточка оставляет только её записи в прежнем порядке', () => {
+    expect(run(notes, { linked: [first] })).toEqual(['кофе с первым', 'чай с обоими'])
+    expect(hasFilters({ ...none, linked: [first] })).toBe(true)
+  })
+
+  it('две карточки: запись должна быть связана с обеими', () => {
+    expect(run(notes, { linked: [first, second] })).toEqual(['чай с обоими'])
+  })
+
+  it('карточка без записей даёт пустой список', () => {
+    expect(run(notes, { linked: [new Set()] })).toEqual([])
+    expect(run(notes, { linked: [first, new Set()] })).toEqual([])
+  })
+
+  it('вместе с другими фильтрами', () => {
+    expect(run(notes, { linked: [first], words: words('кофе') })).toEqual(['кофе с первым'])
+    expect(run(notes, { linked: [second], unreviewed: true })).toEqual(['чай с обоими'])
+    expect(run(notes, { linked: [first], period: yearEvent(2024) })).toEqual([
+      'кофе с первым',
+      'чай с обоими',
+    ])
+    expect(run(notes, { linked: [first], period: yearEvent(2019) })).toEqual([])
   })
 })

@@ -3,7 +3,7 @@ import { useWindowVirtualizer } from '@tanstack/react-virtual'
 import { isApproximate } from './noteFormat'
 import { findRanges, makeSnippet, splitByRanges } from './search'
 import { describeEvent } from './storage'
-import type { Note } from './storage'
+import type { LinkRole, Note } from './storage'
 import './NoteList.css'
 
 // Текст записи. При поиске найденное подсвечивается, а у длинной записи виден кусок вокруг него.
@@ -23,10 +23,13 @@ export default function NoteList({
   notes,
   now,
   words = [],
+  roles,
 }: {
   notes: Note[]
   now: Date
   words?: string[]
+  // Роль человека в записи: если задана, рядом со временем показывается метка
+  roles?: ReadonlyMap<string, LinkRole | null>
 }) {
   const listRef = useRef<HTMLDivElement>(null)
   const [offset, setOffset] = useState(0)
@@ -73,6 +76,11 @@ export default function NoteList({
             <span className={isApproximate(note) ? 'when approx' : 'when'}>
               {describeEvent(note.event, now)}
             </span>
+            {roles?.get(note.id) && (
+              <span className="role">
+                {roles.get(note.id) === 'with' ? 'был со мной' : 'упомянут'}
+              </span>
+            )}
           </a>
         )
       })}
