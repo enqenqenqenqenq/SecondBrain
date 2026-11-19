@@ -51,6 +51,13 @@ interface GoogleOAuth {
   hasGrantedAllScopes(response: TokenResponse, scope: string): boolean
 }
 
+// Приложение запущено как установленный файл Android (Capacitor), а не в браузере
+export function isNativeApp(): boolean {
+  const capacitor = (globalThis as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+    .Capacitor
+  return capacitor?.isNativePlatform?.() === true
+}
+
 let loading: Promise<GoogleOAuth> | null = null
 
 function loadScript(): Promise<GoogleOAuth> {
@@ -87,6 +94,13 @@ export function googleAuth(clientId: string = GOOGLE_CLIENT_ID): Auth {
   const valid = () => token !== null && Date.now() < expiresAt - 60_000
 
   async function ask(prompt: '' | 'select_account'): Promise<string> {
+    // Google не пускает вход во встроенное окно приложения, поэтому в APK окно входа не откроется
+    if (isNativeApp()) {
+      throw new AuthError(
+        'blocked',
+        'Вход Google в приложении для Android пока не готов. Подключите Диск на сайте в браузере.',
+      )
+    }
     const oauth = await loadScript()
     client ??= oauth.initTokenClient({
       client_id: clientId,

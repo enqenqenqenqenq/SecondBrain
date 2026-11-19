@@ -15,5 +15,6 @@
   "categories": {
     "correctness": "error",
     "suspicious": "warn"
-  }
+  },
+  "ignorePatterns": ["android/**", "resources/**"]
 }

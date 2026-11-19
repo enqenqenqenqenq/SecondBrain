@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">SecondBrain</string>
+    <string name="title_activity_main">SecondBrain</string>
+    <string name="package_name">app.secondbrain.notes</string>
+    <string name="custom_url_scheme">app.secondbrain.notes</string>
+</resources>
