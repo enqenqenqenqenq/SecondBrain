@@ -4,8 +4,11 @@ import { db } from '../storage/db'
 import { createController, defaultConfig } from './controller'
 import type { Config, ConfigStore, Controller, SyncState } from './controller'
 import { driveStore } from './drive'
-import { googleAuth } from './google'
+import { googleAuth, isNativeApp } from './google'
 import type { Auth } from './google'
+import { nativeAuth } from './googleNative'
+import type { TokenStore } from './googleNative'
+import { capacitorBridge } from './nativeBridge'
 import { dexieLocalStore, forgetSyncState } from './localStore'
 
 // Настройки синхронизации и запомненный ключ лежат в таблице настроек этого устройства.
@@ -34,6 +37,19 @@ const configStore: ConfigStore = {
   },
 }
 
+// Токен обновления нужен только установленному приложению Android. Он даёт доступ лишь к скрытой папке
+// приложения на Диске, а файлы в ней зашифрованы. Хранится рядом с остальными настройками устройства.
+const refreshTokenStore: TokenStore = {
+  async load() {
+    const row = await db.settings.get('googleRefresh')
+    return typeof row?.value === 'string' ? row.value : null
+  },
+  async save(token) {
+    if (token) await db.settings.put({ key: 'googleRefresh', value: token })
+    else await db.settings.delete('googleRefresh')
+  },
+}
+
 // При разработке можно подменить Диск локальным сервером (localStorage sbFakeDrive), чтобы проверять
 // обмен двух устройств без Google. В выложенной сборке этой ветки нет.
 function developmentRemote() {
@@ -55,7 +71,10 @@ function developmentRemote() {
 function connect() {
   const fake = developmentRemote()
   if (fake) return fake
-  const auth = googleAuth()
+  // В установленном приложении Android вход идёт через системный браузер, в браузере через окно Google
+  const auth = isNativeApp()
+    ? nativeAuth({ bridge: capacitorBridge(), store: refreshTokenStore })
+    : googleAuth()
   return {
     auth,
     remote: driveStore({ token: () => auth.token(false), refresh: () => auth.refresh() }),

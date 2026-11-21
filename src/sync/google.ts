@@ -94,11 +94,11 @@ export function googleAuth(clientId: string = GOOGLE_CLIENT_ID): Auth {
   const valid = () => token !== null && Date.now() < expiresAt - 60_000
 
   async function ask(prompt: '' | 'select_account'): Promise<string> {
-    // Google не пускает вход во встроенное окно приложения, поэтому в APK окно входа не откроется
+    // Google не пускает вход во встроенное окно приложения. В APK используется googleNative.ts, сюда по ошибке попасть нельзя.
     if (isNativeApp()) {
       throw new AuthError(
         'blocked',
-        'Вход Google в приложении для Android пока не готов. Подключите Диск на сайте в браузере.',
+        'Окно входа Google в приложении для Android не работает. Вход идёт через системный браузер.',
       )
     }
     const oauth = await loadScript()
