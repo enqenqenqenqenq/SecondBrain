@@ -1,0 +1,42 @@
+.sync-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.sync-icon-synced {
+  color: #10b981;
+}
+
+.sync-icon-syncing {
+  color: var(--accent);
+  animation: sync-spin 1s linear infinite;
+}
+
+.sync-icon-offline {
+  color: #f59e0b;
+}
+
+.sync-icon-error {
+  color: var(--danger);
+}
+
+.sync-icon-off {
+  color: var(--disabled-text);
+}
+
+@keyframes sync-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-icon-syncing {
+    animation: none;
+    opacity: 0.8;
+  }
+}

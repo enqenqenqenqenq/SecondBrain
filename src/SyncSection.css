@@ -1,3 +1,9 @@
+.sync-status-line {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .sync-unlock {
   display: flex;
   flex-direction: column;

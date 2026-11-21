@@ -8,6 +8,7 @@ import Feed from './Feed'
 import NoteCard from './NoteCard'
 import QuickEntry from './QuickEntry'
 import Settings from './Settings'
+import SyncIndicator from './SyncIndicator'
 import Toast from './Toast'
 import type { ToastState } from './Toast'
 import { deleteNote, restoreNote } from './storage'
@@ -40,6 +41,7 @@ export default function App() {
 
   return (
     <>
+      <SyncIndicator />
       {route.name === 'feed' && <Feed />}
       {route.name === 'note' && <NoteCard id={route.id} onDelete={(id) => void remove(id)} />}
       {route.name === 'complete' && <Complete id={route.id} />}

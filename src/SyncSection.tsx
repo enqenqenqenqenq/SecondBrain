@@ -5,6 +5,7 @@ import { backupFileName } from './backupText'
 import { exportData, serializeExport } from './storage'
 import { sync, useSync } from './sync'
 import { STRENGTH, describeError, lastAtText, statusText } from './sync/messages'
+import SyncIcon from './SyncIcon'
 import './SyncSection.css'
 
 type Dialog = 'create' | 'enter' | 'restart' | 'disconnect' | null
@@ -103,7 +104,12 @@ export default function SyncSection() {
       <dl>
         <div>
           <dt>Google Диск</dt>
-          <dd role="status">{statusText(status)}</dd>
+          <dd role="status">
+            <span className="sync-status-line">
+              <SyncIcon status={status} size={18} />
+              <span>{statusText(status)}</span>
+            </span>
+          </dd>
         </div>
         {connected && state.lastAt !== null && (
           <div>

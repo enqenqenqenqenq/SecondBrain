@@ -33,6 +33,62 @@ export function statusText(status: Status): string {
   }
 }
 
+// Визуальное состояние для понятного значка: синхронизировано, идёт, ошибка, нет связи, выключено
+export type SyncVisualState = 'synced' | 'syncing' | 'offline' | 'error' | 'off'
+
+export function visualState(status: Status): SyncVisualState {
+  switch (status.kind) {
+    case 'off':
+      return 'off'
+    case 'idle':
+      return 'synced'
+    case 'syncing':
+      return 'syncing'
+    case 'offline':
+      return 'offline'
+    case 'signin':
+    case 'password':
+    case 'error':
+      return 'error'
+  }
+}
+
+export function visualLabel(state: SyncVisualState): string {
+  switch (state) {
+    case 'synced':
+      return 'Синхронизировано'
+    case 'syncing':
+      return 'Идёт синхронизация…'
+    case 'offline':
+      return 'Нет связи'
+    case 'error':
+      return 'Ошибка'
+    case 'off':
+      return 'Не подключено'
+  }
+}
+
+export function visualTitle(status: Status): string {
+  switch (status.kind) {
+    case 'off':
+      return 'Синхронизация не подключена'
+    case 'idle':
+      return 'Синхронизировано'
+    case 'syncing':
+      return 'Идёт синхронизация…'
+    case 'offline':
+      return 'Нет связи. Изменения отправятся, когда сеть вернётся'
+    case 'signin':
+      return 'Нужно войти в Google'
+    case 'password':
+      return status.reason === 'changed'
+        ? 'Хранилище изменено. Введите пароль'
+        : 'Введите пароль защиты'
+    case 'error':
+      return status.message ? `Ошибка: ${status.message}` : 'Ошибка синхронизации'
+  }
+}
+
 export function describeError(error: unknown): string {
   if (error instanceof VaultError) {
     if (error.code === 'wrong-password') return 'Неверный пароль'
